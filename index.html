@@ -1,0 +1,2414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vajradhan — Visualizing the unimaginable</title>
+<meta name="description" content="Vajradhan is a creative technology and visual production studio: concept and design, VFX and CGI, virtual production, and post and finishing.">
+<meta name="theme-color" content="#0a0e15">
+<!-- TODO: og:image / og:url need absolute URLs — add them once the site has its final address -->
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="assets/fonts.css">
+<style>
+/* ============================================================= tokens
+   Measured, not invented: the night and haze come off the hero photograph
+   (sky top 24·36·52, sky 44·59·79, horizon haze 96·110·126, moon 178·196·209),
+   the accent and ember off the logo's crystal eye.                        */
+:root{
+  --ink:#0a0e15;          /* page black, a shade under the sky's top      */
+  --ink-2:#111823;
+  --night:#18243a;        /* the sky at the top of the frame              */
+  --slate:#2c3b4f;        /* the sky at the peak                           */
+  --haze:#606e7e;         /* the valley mist                               */
+  --bone:#e4ebf0;         /* moonlight white — all primary type            */
+  --bone-dim:#b2c0cc;     /* the moon's own grey-blue                      */
+  --muted:#7c8794;
+  --line:rgba(228,235,240,.14);
+  --line-soft:rgba(228,235,240,.07);
+  --accent:#d4299b;       /* the eye's magenta                             */
+  --ember:#ff8a3d;        /* the iris                                      */
+  --pad:clamp(20px, 3.2vw, 64px);
+  --nav-h:88px;
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --ease-io:cubic-bezier(.65,0,.35,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{ -webkit-text-size-adjust:100%; scroll-behavior:auto; background:var(--ink);
+  overscroll-behavior-y:none; /* no rubber-band: the fixed canvas and the page would part */ }
+body{
+  margin:0; background:var(--ink); color:var(--bone);
+  font-family:'Onest',system-ui,-apple-system,'Segoe UI','Helvetica Neue',sans-serif;
+  font-weight:300; font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+body.is-locked{ overflow:hidden; height:100vh; }
+::selection{ background:var(--accent); color:#fff; }
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+:focus-visible{ outline:1px solid var(--accent); outline-offset:4px; }
+.sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; }
+
+/* ============================================================= layers */
+#gl{
+  position:fixed; inset:0; width:100%; height:100%;
+  display:block; z-index:0; background:var(--night);
+}
+/* Grain lives in the post shader (uGrain); a full-screen overlay-blended layer
+   on top of it cost a whole-screen blend every frame for no visible gain. */
+#vignette{
+  position:fixed; inset:0; z-index:55; pointer-events:none;
+  background:radial-gradient(125% 95% at 50% 42%, transparent 44%, rgba(4,6,10,.5) 100%);
+}
+.page{ position:relative; z-index:10; }
+
+/* Horizontal overflow is stopped where it starts, not papered over at the
+   root. Every block that holds something built to hang past the frame — the
+   cut-out planes, the cloth bleed — clips its own x axis. `clip` (unlike
+   `hidden`) makes no scroll container, so vertical bleed and sticky
+   behaviour survive and nothing has to measure the viewport by hand. */
+.hero, .sec, .foot{ overflow-x:clip; overflow-y:visible; }
+
+/* ============================================================= type */
+.eyebrow{
+  font-size:10px; font-weight:500; letter-spacing:.24em; text-transform:uppercase;
+  color:var(--bone-dim); text-shadow:0 1px 16px rgba(4,6,10,.9);
+}
+h1,h2,h3{ font-weight:400; margin:0; letter-spacing:-.008em; }
+.display{
+  text-transform:uppercase; line-height:1.02; letter-spacing:-.012em;
+  font-weight:400; text-shadow:0 2px 34px rgba(4,6,10,.6);
+}
+.h-sec{ font-size:clamp(30px,3.9vw,64px); }
+.body-lg{ font-size:clamp(15px,1.06vw,18px); line-height:1.72; color:#bcc7d0; font-weight:300; text-shadow:0 1px 20px rgba(4,6,10,.88); }
+.body{ font-size:14px; line-height:1.7; color:#9eaab5; font-weight:300; text-shadow:0 1px 18px rgba(4,6,10,.85); }
+
+/* ============================================================= reveal */
+[data-rv]{ opacity:0; }
+[data-rv="up"]{ transform:translate3d(0,26px,0); }
+[data-rv].rv-in{ opacity:1; transform:none;
+  transition:opacity .9s var(--ease-out), transform 1.05s var(--ease-out); }
+.mask-line{ display:block; overflow:hidden; }
+.mask-line:not(.word-reveal) > span{ display:block; transform:translate3d(0,110%,0); transition:transform 1.05s var(--ease-out); }
+.mask-line.rv-in:not(.word-reveal) > span{ transform:none; }
+.word-mask{ display:inline-block; overflow:hidden; vertical-align:top; padding-bottom:.04em; }
+.word{
+  display:inline-block; opacity:0; transform:translate3d(0,112%,0);
+  transition:transform .82s var(--ease-out), opacity .5s var(--ease-out);
+  transition-delay:var(--word-delay,0ms);
+}
+.word-reveal.rv-in .word{ opacity:1; transform:none; }
+/* hint only while a heading waits to reveal, so dozens of layers are not kept alive afterwards */
+.word-reveal:not(.rv-in) .word{ will-change:transform,opacity; }
+
+/* ============================================================= preloader */
+#pre{
+  position:fixed; inset:0; z-index:100; background:var(--ink);
+  display:flex; align-items:center; justify-content:center;
+  transition:opacity .8s var(--ease), visibility .8s;
+}
+#pre.done{ opacity:0; visibility:hidden; pointer-events:none; }
+.pre-in{ width:min(420px,74%); text-align:center; }
+.pre-mark{ margin:0 auto 22px; width:72px; height:auto; }
+.pre-word{ font-family:'Unbounded','Onest',sans-serif; font-weight:400; font-size:13px; letter-spacing:.5em;
+  color:var(--bone); margin:0 0 22px .5em; }
+.pre-bar{ position:relative; height:1px; background:rgba(228,235,240,.14); overflow:hidden; }
+.pre-bar i{ position:absolute; inset:0 100% 0 0; background:var(--bone); transition:right .35s linear; }
+.pre-meta{ display:flex; justify-content:space-between; margin-top:12px;
+  font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
+.pre-meta b{ font-weight:500; color:var(--bone-dim); font-variant-numeric:tabular-nums; }
+
+/* ============================================================= nav
+   The bar is right:0 against the viewport. Nothing on the page is allowed to
+   widen the document (see overflow-x:clip above), so the initial containing
+   block is the screen and no measured width has to be written back into CSS. */
+.nav{
+  position:fixed; top:0; left:0; right:0; height:var(--nav-h); z-index:50;
+  display:flex; align-items:center; justify-content:space-between; gap:24px; padding:0 var(--pad);
+  transition:transform .55s var(--ease);
+}
+.nav::before{
+  content:''; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  /* solid rather than backdrop-blurred: the canvas under the bar redraws every
+     frame, so a backdrop blur would be re-run every frame too */
+  background:linear-gradient(rgba(10,14,21,.9), rgba(10,14,21,.8));
+  opacity:0; transition:opacity .5s linear;
+}
+.nav.stuck::before{ opacity:1; }
+.nav::after{
+  content:''; position:absolute; left:var(--pad); right:var(--pad); bottom:0; height:1px;
+  background:var(--line-soft); opacity:0; transition:opacity .5s;
+}
+.nav.stuck::after{ opacity:1; }
+.nav.hide{ transform:translate3d(0,-101%,0); }
+.brand{ display:flex; align-items:center; gap:14px; flex:0 0 auto; }
+.brand img{ width:clamp(40px,3.6vw,64px); height:auto; }
+.brand b{ font-size:clamp(13px,1.08vw,20px); font-weight:500; letter-spacing:.24em; }
+.nav-burger{ width:40px; height:24px; position:relative; flex:0 0 auto; z-index:3; }
+.nav-burger i{ position:absolute; right:0; height:1.5px; background:var(--bone);
+  transition:width .45s var(--ease-out), transform .45s var(--ease-out), top .45s var(--ease-out); }
+.nav-burger i:nth-child(1){ top:7px; width:40px; }
+.nav-burger i:nth-child(2){ top:15px; width:26px; }
+.nav-burger:hover i:nth-child(2){ width:40px; }
+.nav-burger[aria-expanded="true"] i:nth-child(1){ top:11px; width:30px; transform:rotate(45deg); }
+.nav-burger[aria-expanded="true"] i:nth-child(2){ top:11px; width:30px; transform:rotate(-45deg); }
+
+/* the menu sheet — the design keeps the bar to a logo and a burger at every
+   width, so the links live here on desktop too */
+.menu{
+  position:fixed; top:0; right:0; bottom:0; width:min(88%,460px); z-index:49;
+  padding:calc(var(--nav-h) + 30px) var(--pad) 36px;
+  display:flex; flex-direction:column; gap:0;
+  background:rgba(8,11,17,.97); border-left:1px solid var(--line-soft);
+  transform:translate3d(100%,0,0); visibility:hidden;
+  transition:transform .65s var(--ease-out), visibility 0s linear .65s;
+}
+.menu.open{ transform:none; visibility:visible; transition-delay:0s; }
+.menu a.mlink{
+  display:flex; align-items:baseline; gap:18px; padding:18px 0; border-bottom:1px solid var(--line-soft);
+  font-size:clamp(20px,2vw,28px); font-weight:300; letter-spacing:-.005em; color:var(--bone);
+  transition:color .35s;
+}
+.menu a.mlink > *{ transition:transform .5s var(--ease-out), color .35s; }
+.menu a.mlink b{ font-weight:inherit; }
+.menu a.mlink span{ font-size:10px; letter-spacing:.2em; color:var(--muted); font-variant-numeric:tabular-nums; }
+.menu a.mlink:hover{ color:#fff; }
+.menu a.mlink:hover > *{ transform:translate3d(10px,0,0); }
+.menu a.mlink:hover span{ color:var(--accent); }
+.menu-foot{ margin-top:auto; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+.menu-foot a{ color:var(--bone-dim); }
+.scrim{ position:fixed; inset:0; z-index:48; background:rgba(4,6,10,.5); opacity:0; visibility:hidden;
+  transition:opacity .5s, visibility 0s linear .5s; }
+.scrim.open{ opacity:1; visibility:visible; transition-delay:0s; }
+html.nav-open, html.nav-open body{ overflow:hidden; }
+/* A transform on the bar would make it the containing block for the fixed
+   sheet it sits beside; the hide transform is dropped while the menu is open. */
+html.nav-open .nav{ transform:none; transition:none; }
+
+/* ============================================================= hero
+   Composed to the mock-up: the wordmark top left, the burger top right, the
+   headline and its standfirst sitting on the lower ridges, and the four
+   disciplines as a ruled strip along the foot of the frame. */
+.hero{ position:relative; min-height:100svh; padding:0 var(--pad);
+  display:flex; flex-direction:column; justify-content:flex-end; }
+.hero::after{ content:''; position:absolute; left:0; right:0; bottom:0; height:42%; pointer-events:none;
+  background:linear-gradient(transparent, rgba(8,10,14,.46) 60%, rgba(8,10,14,.72)); z-index:0; }
+.hero > *{ position:relative; z-index:2; }
+.hero-copy{ max-width:min(900px,48%); padding-top:calc(var(--nav-h) + 20px); }
+.hero h1{ font-size:clamp(34px,4.3vw,88px); line-height:1.0; margin-bottom:clamp(12px,1.6vh,22px); color:#e9eef1; }
+.hero-sub{ font-size:clamp(15px,1.3vw,25px); line-height:1.5; color:#b9c3cb; max-width:42ch; margin:0;
+  text-shadow:0 1px 26px rgba(4,6,10,.95); }
+.chapters{
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:clamp(14px,2.2vw,44px);
+  margin-top:clamp(36px,7vh,86px); padding-bottom:clamp(26px,5.6vh,70px);
+}
+.chip{ display:flex; gap:clamp(12px,1.4vw,28px); align-items:flex-start; cursor:default; }
+.chip .num{ font-size:clamp(30px,3.1vw,62px); font-weight:300; line-height:.9; letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums; flex:0 0 auto; transition:color .4s, transform .5s var(--ease-out); }
+.chip .tx{ min-width:0; padding-top:.2em; }
+.chip b{ display:block; font-size:clamp(10px,.95vw,17px); font-weight:400; letter-spacing:.2em; text-transform:uppercase;
+  color:#d3dbe1; margin-bottom:.55em; transition:color .4s; white-space:nowrap; }
+.chip .d{ display:block;  margin:0; font-size:clamp(11px,.88vw,16px); line-height:1.5; color:#98a3ad; max-width:26ch; transition:color .4s; }
+.chip:hover .num, .chip.on .num{ color:var(--ember); transform:translate3d(0,-2px,0); }
+.chip:hover b, .chip.on b{ color:#fff; }
+.chip:hover .d{ color:var(--bone-dim); }
+
+/* ============================================================= sections */
+.sec{ position:relative; padding:clamp(96px,16vh,200px) var(--pad); }
+.sec::before{
+  content:''; position:absolute; inset:-22% -4%; z-index:-1; pointer-events:none;
+  background:radial-gradient(110% 62% at 30% 50%, rgba(8,11,17,.86), rgba(8,11,17,.6) 42%, rgba(8,11,17,.16) 74%, rgba(8,11,17,0));
+  -webkit-mask-image:linear-gradient(transparent, #000 44%);
+          mask-image:linear-gradient(transparent, #000 44%);
+}
+#work::before{ background:radial-gradient(108% 64% at 50% 50%, rgba(8,11,17,.72), rgba(8,11,17,.42) 50%, rgba(8,11,17,0)); }
+#contact::before{ background:radial-gradient(82% 58% at 50% 34%, rgba(8,11,17,.62), rgba(8,11,17,.34) 56%, rgba(8,11,17,0) 82%); }
+.foot::before{
+  content:''; position:absolute; inset:-38% 0 0; z-index:-1; pointer-events:none;
+  background:linear-gradient(rgba(8,11,17,0), rgba(8,11,17,.62) 28%, rgba(8,11,17,.95) 56%, rgba(8,11,17,.98));
+}
+.sec-head{ display:flex; align-items:baseline; gap:16px; margin-bottom:clamp(30px,5vh,66px); }
+.sec-head .k{ font-size:10px; font-weight:500; letter-spacing:.24em; text-transform:uppercase; color:var(--muted); }
+.sec-head .k b{ color:var(--accent); font-weight:500; }
+.rule{ flex:1 1 auto; height:1px; background:var(--line-soft); }
+
+/* — philosophy: title across two columns, the reading held right */
+.story{ display:grid; grid-template-columns:minmax(120px,.38fr) minmax(0,1.08fr) minmax(280px,.9fr);
+  gap:clamp(20px,3vw,56px); align-items:start; }
+.story h2{ grid-column:1 / 3; max-width:14ch; }
+.story-copy{ grid-column:3; padding-top:6px; }
+.story-copy .lead{ font-size:clamp(15px,1.16vw,19px); line-height:1.66; color:#c6d0d8; margin:0; text-shadow:0 1px 20px rgba(4,6,10,.9); }
+.story-copy .body{ margin:20px 0 0; }
+.arrowlink{ display:inline-flex; align-items:center; gap:12px; margin-top:34px;
+  font-size:11px; font-weight:500; letter-spacing:.2em; text-transform:uppercase; color:var(--bone); }
+.arrowlink .ar{ width:36px; height:36px; border:1px solid var(--line); border-radius:50%;
+  display:grid; place-items:center; transition:background .45s var(--ease), border-color .45s; }
+.arrowlink .ar svg{ width:13px; height:13px; transition:transform .5s var(--ease-out); }
+.arrowlink:hover .ar{ background:var(--bone); border-color:var(--bone); }
+.arrowlink:hover .ar svg{ transform:translate3d(2px,-2px,0); }
+.arrowlink:hover .ar svg path{ stroke:var(--ink); }
+.stats{ display:grid; grid-template-columns:repeat(4,1fr); margin-top:clamp(46px,8vh,96px); border-top:1px solid var(--line-soft); }
+.stats div{ min-height:108px; padding:18px; border-left:1px solid var(--line-soft); }
+.stats div:last-child{ border-right:1px solid var(--line-soft); }
+.stats b{ display:block; font-size:clamp(22px,2.1vw,34px); font-weight:300; letter-spacing:-.02em; }
+.stats span{ font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
+
+/* — services: four plates, two by two */
+.split-head{ display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1fr); gap:clamp(28px,5vw,90px); align-items:end; margin-bottom:clamp(34px,6vh,72px); }
+.split-head h2{ max-width:14ch; }
+.split-head p{ margin:0; max-width:48ch; }
+.plates{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); }
+.plate{ position:relative; display:flex; flex-direction:column; gap:14px; min-height:280px; padding:clamp(22px,2.4vw,36px);
+  background:rgba(10,14,21,.84); overflow:hidden; contain:paint; }
+.plate > :not(.bar){ transition:transform .5s var(--ease-out), color .4s; }
+.plate::before{ content:''; position:absolute; inset:0; pointer-events:none; opacity:0;
+  background:linear-gradient(145deg, rgba(212,41,155,.14), transparent 58%); transition:opacity .55s var(--ease); }
+.plate:hover::before{ opacity:1; }
+.plate:hover > :not(.bar){ transform:translate3d(8px,0,0); }
+.plate .k{ font-size:11px; letter-spacing:.16em; color:var(--muted); font-variant-numeric:tabular-nums; }
+.plate:hover .k{ color:var(--accent); }
+.plate h3{ font-size:clamp(20px,2vw,32px); font-weight:400; }
+.plate p{ margin:0; max-width:40ch; font-size:14px; line-height:1.65; color:#9ba7b2; }
+.plate ul{ list-style:none; margin:auto 0 0; padding:14px 0 0; display:flex; flex-wrap:wrap; gap:8px 18px;
+  border-top:1px solid var(--line-soft); font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--bone-dim); }
+.plate .bar{ position:absolute; left:0; bottom:0; height:1px; width:100%; background:var(--accent);
+  transform:scaleX(0); transform-origin:left; transition:transform .7s var(--ease-out); }
+.plate:hover .bar{ transform:scaleX(1); }
+
+/* — selected work: four fabric plates, staggered */
+.cards{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(14px,2vw,34px) clamp(14px,2vw,34px); align-items:start; }
+.card{ position:relative; }
+.card:nth-child(even){ transform:translateY(clamp(30px,6vw,110px)); }
+.card-fr{
+  position:relative; display:block; aspect-ratio:3/2; isolation:isolate;
+  outline:1px solid var(--line-soft); outline-offset:-1px;
+  transition:outline-color .5s var(--ease);
+  background:var(--card-img) center / cover no-repeat, var(--ink-2);
+}
+.card-fr::after{ content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(180deg, rgba(6,8,12,.04) 40%, rgba(6,8,12,.78)); }
+.card:hover .card-fr{ outline-color:rgba(228,235,240,.3); }
+.card:nth-child(1) .card-fr{ --card-img:url('assets/img/vajradhan2.webp'); }
+.card:nth-child(2) .card-fr{ --card-img:url('assets/img/vajradhan3.webp'); }
+.card:nth-child(3) .card-fr{ --card-img:url('assets/img/vajradhan4.webp'); }
+.card:nth-child(4) .card-fr{ --card-img:url('assets/img/vajradhan5.webp'); }
+/* The fabric overdraws its card by the cloth bleed on every side so the billow
+   and its contact shadow have room; its own outline is drawn in the shader. */
+.cloth-out{ position:absolute; pointer-events:none; z-index:1; }
+.on-cloth{ background:none !important; outline:0 !important; overflow:visible; }
+.on-cloth::after{ display:none; }
+.card-lab{ position:absolute; left:18px; right:18px; bottom:16px; z-index:3;
+  display:flex; align-items:flex-end; justify-content:space-between; gap:10px; pointer-events:none; }
+.card-lab b{ font-size:clamp(14px,1.2vw,19px); font-weight:400; letter-spacing:.04em; text-transform:uppercase; }
+.card-lab span{ font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--bone-dim); }
+.card-ar{ position:absolute; top:16px; right:16px; z-index:3; width:28px; height:28px;
+  opacity:0; transform:translate3d(-4px,4px,0); transition:opacity .5s var(--ease-out), transform .5s var(--ease-out); }
+.card:hover .card-ar{ opacity:1; transform:none; }
+.card-meta{ display:flex; justify-content:space-between; margin-top:14px;
+  font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+
+/* the lights in the stills: every plate has one moon, one has a flame. A
+   screened glow over each, on two tracks whose periods do not divide, so the
+   loop never comes back round inside a look. A moon only breathes; a flame
+   gutters. */
+.glow{
+  position:absolute; z-index:2; pointer-events:none;
+  left:var(--gx); top:var(--gy); width:calc(var(--gr) * 2); aspect-ratio:1;
+  translate:-50% -50%; mix-blend-mode:screen;
+  animation:glow-swell var(--gt2) var(--ease-io) infinite alternate;
+}
+.glow::before{
+  content:''; position:absolute; inset:0; border-radius:50%;
+  background:radial-gradient(closest-side, var(--gc1), var(--gc2) 40%, transparent 72%);
+  animation:glow-pulse var(--gt) var(--ease-io) infinite;
+}
+@keyframes glow-swell{ from{ transform:scale(.93); } to{ transform:scale(1.07); } }
+@keyframes glow-pulse{ from{ opacity:.78; } 50%{ opacity:1; } to{ opacity:.78; } }
+@keyframes glow-flame{
+  0%{ opacity:.74 } 6%{ opacity:.97 } 12%{ opacity:.63 } 19%{ opacity:.9 } 27%{ opacity:.55 }
+  34%{ opacity:.94 } 42%{ opacity:.71 } 51%{ opacity:1 } 58%{ opacity:.6 } 66%{ opacity:.88 }
+  74%{ opacity:.67 } 83%{ opacity:.96 } 91%{ opacity:.72 } 100%{ opacity:.74 }
+}
+.glow--flame::before{ animation-name:glow-flame; }
+
+/* — process: a ruled list */
+.rows{ border-top:1px solid var(--line-soft); }
+.row{
+  position:relative; display:grid; align-items:center;
+  grid-template-columns:64px minmax(0,1fr) minmax(0,1.3fr) 96px;
+  gap:clamp(14px,2.4vw,40px); padding:clamp(20px,2.4vw,30px) 0; border-bottom:1px solid var(--line-soft);
+}
+.row > .k, .row > h3, .row > p{ transition:transform .5s var(--ease-out), color .4s; }
+.row::before{ content:''; position:absolute; left:calc(var(--pad) * -1); right:0; top:0; bottom:0;
+  background:linear-gradient(90deg, rgba(212,41,155,.10), transparent 46%);
+  opacity:0; transition:opacity .55s var(--ease); pointer-events:none; }
+.row:hover::before{ opacity:1; }
+.row:hover > .k, .row:hover > h3, .row:hover > p{ transform:translate3d(clamp(8px,1.2vw,18px),0,0); }
+.row .k{ font-size:11px; letter-spacing:.16em; color:var(--muted); font-variant-numeric:tabular-nums; }
+.row:hover .k{ color:var(--accent); }
+.row h3{ font-size:clamp(17px,1.6vw,26px); font-weight:400; }
+.row p{ margin:0; font-size:13px; line-height:1.6; color:#95a1ac; text-shadow:0 1px 16px rgba(4,6,10,.92); }
+.row .t{ text-align:right; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:#8793a0; }
+.row .bar{ position:absolute; left:0; bottom:-1px; height:1px; width:100%; background:var(--accent);
+  transform:scaleX(0); transform-origin:left; transition:transform .7s var(--ease-out); }
+.row:hover .bar{ transform:scaleX(1); }
+
+/* — contact: the closing frame; the 3-D wordmark rises in the scene below it */
+.fin{ min-height:100svh; display:flex; flex-direction:column; justify-content:flex-start; align-items:center;
+  text-align:center; padding-top:clamp(120px,20vh,240px); }
+.fin .eyebrow{ margin-bottom:26px; }
+.fin h2{ font-size:clamp(38px,6.6vw,120px); line-height:.96; letter-spacing:-.03em; text-transform:uppercase; max-width:13ch; }
+.fin p{ max-width:46ch; margin:26px auto 0; }
+.cta{
+  position:relative; display:inline-flex; align-items:center; gap:14px; margin-top:44px;
+  padding:17px 30px; border:1px solid var(--line); border-radius:100px; overflow:hidden; isolation:isolate;
+  font-size:11px; font-weight:500; letter-spacing:.22em; text-transform:uppercase;
+  transition:color .45s var(--ease), border-color .45s;
+}
+.cta i{ position:absolute; inset:0; background:var(--bone); transform:translate3d(0,101%,0);
+  transition:transform .62s var(--ease-out); z-index:-1; }
+.cta:hover{ color:var(--ink); border-color:var(--bone); }
+.cta:hover i{ transform:none; }
+.cta:hover svg path{ stroke:var(--ink); }
+.fin-note{ margin-top:22px; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
+
+/* — footer · manifesto */
+.foot{ position:relative; padding:clamp(56px,9vh,110px) var(--pad) clamp(26px,4vh,40px); }
+.foot-grid{ position:relative; display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(22px,4vw,60px); }
+.foot-brand{ grid-column:1 / -1; display:grid; grid-template-columns:84px minmax(0,1fr); gap:24px; align-items:center;
+  padding-bottom:34px; margin-bottom:8px; border-bottom:1px solid var(--line-soft); }
+.foot-brand img{ width:72px; height:auto; }
+.foot-brand p{ margin:0; max-width:52ch; font-size:clamp(18px,2vw,30px); line-height:1.35; color:var(--bone-dim); }
+.foot-grid > div:nth-child(n+3){ padding-left:clamp(18px,2.2vw,34px); border-left:1px solid var(--line-soft); }
+.foot h4{ margin:0 0 16px; font-size:10px; font-weight:500; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); }
+.foot ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; }
+.foot li a{ font-size:13px; color:#909ca7; transition:color .35s; }
+.foot li a:hover{ color:var(--bone); }
+.foot-base{ position:relative; display:grid; grid-template-columns:1fr auto 1fr; gap:20px; align-items:center;
+  margin-top:clamp(38px,6vh,74px); padding-top:20px; border-top:1px solid var(--line-soft);
+  font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+.foot-base span:last-child{ text-align:right; }
+
+/* ============================================================= progress rail */
+.rail{ position:fixed; right:calc(var(--pad) - 6px); top:50%; transform:translateY(-50%); z-index:45;
+  display:flex; flex-direction:column; gap:12px; align-items:center;
+  opacity:0; visibility:hidden; transition:opacity .6s, visibility 0s linear .6s; }
+.rail.show{ opacity:1; visibility:visible; transition-delay:0s; }
+.rail button{ width:24px; height:12px; display:grid; place-items:center; }
+.rail i{ display:block; width:24px; height:1px; background:rgba(228,235,240,.26);
+  transform:scaleX(.5834); transition:transform .5s var(--ease-out), background-color .5s var(--ease-out); }
+.rail button.on i{ transform:none; background:var(--bone); }
+.rail button:hover i{ transform:none; background:var(--bone-dim); }
+
+/* ============================================================= cursor */
+.cur-dot{ position:fixed; z-index:80; top:0; left:0; width:26px; height:26px; margin:-13px 0 0 -13px;
+  border:1px solid rgba(228,235,240,.42); border-radius:50%; pointer-events:none;
+  /* position comes in through `translate` (set per frame by JS); the grow is a
+     `transform` scale, so neither ever touches layout */
+  transition:transform .35s var(--ease-out), background-color .35s, border-color .35s, opacity .3s; opacity:0; }
+.cur-dot.act{ transform:scale(2); background:rgba(228,235,240,.07); border-color:rgba(228,235,240,.36); }
+@media (hover:hover) and (pointer:fine){ .cur-dot{ opacity:1 } }
+
+/* ================================================= foreground layers (.fg)
+   Each section owns one .fg stage of cut-outs. While its chapter holds the
+   viewport the stage is lifted into #fg-sky — outside .page's stacking
+   context, so it can stand in front of the nav — as a fixed, bottom-anchored
+   near plane. Pieces rise in from the edge they are anchored to, 90 ms apart,
+   and the outgoing stage blurs away. Every piece also carries a depth, --d:
+   the frame loop writes the pointer and scroll drift into --px/--py on the
+   host and each piece moves by its own share, so the near plane has parallax
+   of its own over the scene behind it. */
+.fg{ position:absolute; inset:0; z-index:3; overflow:visible; pointer-events:none; }
+#fg-sky{ position:fixed; left:0; top:0; width:0; height:0; z-index:52; pointer-events:none; }
+.sec > *:not(.fg), .foot > *:not(.fg){ position:relative; z-index:2; }
+.fg-el{ position:absolute; display:block; opacity:0;
+  translate:calc(var(--px,0) * var(--d,1) * 1px) calc(var(--py,0) * var(--d,1) * 1px); }
+.fg-el > img{ width:100%; height:auto; }
+.fg-el--flip > img{ transform:scaleX(-1); }
+[data-fg-in="up"]   { transform:translate3d(0,13%,0); }
+[data-fg-in="left"] { transform:translate3d(-11%,6%,0); }
+[data-fg-in="right"]{ transform:translate3d(11%,6%,0); }
+@keyframes fg-sway{
+  from{ transform:rotate(-.45deg) translate3d(0,2px,0); }
+  to  { transform:rotate(.45deg)  translate3d(0,-6px,0); }
+}
+.fg-el--sway > img{ animation:fg-sway 21s var(--ease-io) infinite alternate; transform-origin:50% 100%; }
+/* stages that are not on screen hold still */
+.fg:not(.fg-active):not(.fg-retiring) .fg-el--sway > img{ animation-play-state:paused; }
+.fg.fg-active,.fg.fg-retiring{
+  position:fixed; left:0; right:0; top:auto; bottom:0; height:min(52svh,640px);
+  z-index:1; overflow:visible; pointer-events:none;
+}
+.fg.fg-active .fg-el{
+  opacity:1; transform:none;
+  transition:opacity 1.2s var(--ease-out), transform 1.5s var(--ease-out);
+  transition-delay:var(--fg-delay,0ms);
+}
+/* the live stage gets its own layers: --px/--py are rewritten every frame, and
+   without this each write would repaint the big cut-outs */
+.fg.fg-active .fg-el, .fg.fg-retiring .fg-el{ will-change:transform, translate, opacity; }
+.fg .fg-el:nth-child(2){ --fg-delay:90ms; }
+.fg .fg-el:nth-child(3){ --fg-delay:180ms; }
+.fg.fg-retiring .fg-el{
+  opacity:0; transform:translate3d(0,8vh,0) scale(.98); filter:blur(6px);
+  transition:opacity .68s var(--ease-out),transform .78s var(--ease-out),filter .78s var(--ease-out);
+}
+/* placement keys off [data-fg], because the live stage is re-parented */
+[data-fg="about"] .fg-hill    { left:-8%;  bottom:-60px;  width:clamp(420px,52vw,900px); --d:.6; }
+[data-fg="about"] .fg-grass   { right:-6%; bottom:-120px; width:clamp(380px,44vw,820px); --d:1.4; }
+[data-fg="services"] .fg-stones{ right:-7%; bottom:-90px; width:clamp(220px,22vw,420px); --d:1.1; }
+[data-fg="services"] .fg-grass { left:-8%;  bottom:-130px; width:clamp(360px,40vw,760px); --d:1.5; }
+[data-fg="work"] .fg-pine     { right:-3%; bottom:-50px;  width:clamp(170px,17vw,320px); --d:1.2; }
+[data-fg="work"] .fg-grass    { left:-6%;  bottom:-140px; width:clamp(340px,36vw,700px); --d:1.6; }
+[data-fg="process"] .fg-hill  { right:-10%; bottom:-70px; width:clamp(420px,50vw,880px); --d:.6; }
+[data-fg="process"] .fg-stones{ left:-7%;  bottom:-90px;  width:clamp(200px,20vw,380px); --d:1.2; }
+[data-fg="contact"] .fg-pine  { left:-2%;  bottom:-60px;  width:clamp(150px,15vw,290px); --d:1.1; }
+[data-fg="contact"] .fg-grass { right:-8%; bottom:-140px; width:clamp(340px,38vw,720px); --d:1.6; }
+[data-fg="foot"] .fg-stones   { left:-5%;  bottom:-110px; width:clamp(220px,24vw,440px); --d:1; }
+[data-fg="foot"] .fg-grass    { right:-6%; bottom:-150px; width:clamp(300px,32vw,600px); --d:1.4; }
+
+/* ============================================================= fallback
+   If WebGL will not start, or is lost and not given back, the scene becomes
+   its five photographic layers stacked in plain CSS. They share one frame, so
+   one cover rule registers them exactly as the canvas would. */
+.fb-stack{ display:none; position:fixed; inset:0; z-index:0; overflow:hidden; background:var(--night); }
+.fb-stack img{ position:absolute; inset:0; width:100%; height:100%; max-width:none; object-fit:cover; object-position:50% 50%; }
+.no-webgl #gl{ display:none; }
+.no-webgl .fb-stack{ display:block; }
+.no-webgl .sec::before{ opacity:.85; }
+
+/* ============================================================= responsive */
+@media (max-width:1080px){
+  .hero-copy{ max-width:min(640px,70%); }
+  .story{ grid-template-columns:1fr; gap:26px; }
+  .story h2, .story-copy{ grid-column:auto; }
+  .story h2{ max-width:16ch; }
+  .split-head{ grid-template-columns:1fr; gap:18px; }
+  .row{ grid-template-columns:44px minmax(0,1fr) 84px; }
+  .row p{ display:none; }
+  .chapters{ grid-template-columns:repeat(2,minmax(0,1fr)); gap:26px 20px; }
+}
+@media (max-width:820px){
+  :root{ --nav-h:72px; }
+  .hero-copy{ max-width:none; }
+  .rail{ display:none; }
+  .chip .d{ display:block;  font-size:12px; }
+  .stats{ grid-template-columns:repeat(2,1fr); border-right:1px solid var(--line-soft); }
+  .stats div{ min-height:86px; padding:14px; }
+  .stats div:nth-child(-n+2){ border-bottom:1px solid var(--line-soft); }
+  .stats div:last-child{ border-right:0; }
+  .plates{ grid-template-columns:1fr; }
+  .plate{ min-height:0; }
+  .cards{ grid-template-columns:1fr; }
+  .card:nth-child(even){ transform:none; }
+  .foot-grid{ grid-template-columns:1fr; }
+  .foot-brand{ grid-column:auto; grid-template-columns:minmax(0,1fr); row-gap:16px; }
+  .foot-grid > div:nth-child(n+3){ padding-left:0; border-left:0; }
+  .foot-base{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
+  .foot-base span:last-child{ text-align:left; }
+  /* one or two anchors per section; what stays is smaller */
+  [data-fg="about"] .fg-hill, [data-fg="process"] .fg-hill, [data-fg="work"] .fg-pine, [data-fg="foot"] .fg-stones{ display:none; }
+  [data-fg] .fg-grass{ width:min(88%,480px); bottom:-80px; }
+  [data-fg] .fg-stones{ width:min(60%,320px); bottom:-40px; }
+  [data-fg] .fg-pine{ width:min(34%,170px); bottom:-40px; }
+}
+@media (max-width:560px){
+  .chapters{ gap:22px 14px; }
+  .chip{ flex-direction:column; gap:6px; }
+  .chip b{ white-space:normal; }
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+  [data-rv]{ opacity:1 !important; transform:none !important; }
+  .mask-line > span,.word{ opacity:1 !important; transform:none !important; }
+  .glow, .glow::before, .fg-el--sway > img{ animation:none !important; }
+  .fg.fg-retiring .fg-el{ transition:none !important; filter:none !important; }
+  .fg-el{ translate:none; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="gl" aria-hidden="true"></canvas>
+<!-- the no-WebGL scene: the same five layers, stacked in CSS; loaded only if shown -->
+<div class="fb-stack" aria-hidden="true">
+  <img src="assets/img/vajradhan1-sky.webp"  alt="" width="2048" height="1143" loading="lazy" decoding="async">
+  <img src="assets/img/vajradhan1-moon.webp" alt="" width="2048" height="1143" loading="lazy" decoding="async">
+  <img src="assets/img/vajradhan1-far.webp"  alt="" width="2048" height="1143" loading="lazy" decoding="async">
+  <img src="assets/img/vajradhan1-mid.webp"  alt="" width="2048" height="1143" loading="lazy" decoding="async">
+  <img src="assets/img/vajradhan1-near.webp" alt="" width="2048" height="1143" loading="lazy" decoding="async">
+</div>
+<div id="vignette" aria-hidden="true"></div>
+<div class="cur-dot" id="cursor" aria-hidden="true"></div>
+
+<!-- ============================================================ preloader -->
+<div id="pre" role="status" aria-live="polite">
+  <div class="pre-in">
+    <img class="pre-mark" src="assets/img/vajradhan-logo.webp" alt="" width="640" height="507" loading="lazy" decoding="async">
+    <div class="pre-word" aria-hidden="true">VAJRADHAN</div>
+    <div class="pre-bar"><i id="pre-fill"></i></div>
+    <div class="pre-meta">
+      <span id="pre-step">Raising the range</span><b><span id="pre-pct">0</span>%</b>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ nav -->
+<header class="nav" id="nav">
+  <a class="brand" href="#top" data-cursor aria-label="Vajradhan — back to top">
+    <img src="assets/img/vajradhan-logo.webp" alt="" width="640" height="507" loading="lazy" decoding="async">
+    <b aria-hidden="true">VAJRADHAN</b>
+  </a>
+  <button class="nav-burger" id="burger" type="button" aria-label="Open menu" aria-controls="menu" aria-expanded="false" data-cursor><i></i><i></i></button>
+</header>
+<nav class="menu" id="menu" aria-label="Site">
+  <a class="mlink" href="#about" data-cursor><span>01</span><b>Philosophy</b></a>
+  <a class="mlink" href="#services" data-cursor><span>02</span><b>Services</b></a>
+  <a class="mlink" href="#work" data-cursor><span>03</span><b>Selected work</b></a>
+  <a class="mlink" href="#process" data-cursor><span>04</span><b>Process</b></a>
+  <a class="mlink" href="#contact" data-cursor><span>05</span><b>Contact</b></a>
+  <!-- TODO: replace with the studio's real address -->
+  <p class="menu-foot">Enquiries — <a href="mailto:hello@example.com">hello@example.com</a></p>
+</nav>
+<div class="scrim" id="scrim" aria-hidden="true"></div>
+
+<main class="page" id="top">
+
+<!-- ============================================================ hero -->
+<section class="hero" id="hero" data-cam="0" aria-labelledby="hero-title">
+  <div class="hero-copy">
+    <h1 class="display" id="hero-title">
+      <span class="mask-line"><span>Visualizing the</span></span>
+      <span class="mask-line"><span>unimaginable.</span></span>
+    </h1>
+    <p class="hero-sub" data-rv="up">Crafting immersive worlds and cinematic experiences through cutting-edge technology and creative vision.</p>
+  </div>
+  <div class="chapters" id="chips">
+    <a class="chip" href="#services" data-chip="0" data-rv="up" data-cursor><span class="num">01</span>
+      <span class="tx"><b>Concept &amp; Design</b><span class="d">Shaping raw ideas into worlds with a visual language of their own.</span></span></a>
+    <a class="chip" href="#services" data-chip="1" data-rv="up" data-cursor><span class="num">02</span>
+      <span class="tx"><b>VFX &amp; CGI</b><span class="d">Effects and digital environments built to hold up on the largest screen.</span></span></a>
+    <a class="chip" href="#services" data-chip="2" data-rv="up" data-cursor><span class="num">03</span>
+      <span class="tx"><b>Virtual Production</b><span class="d">Real-time worlds on set, where the camera meets the digital frontier.</span></span></a>
+    <a class="chip" href="#services" data-chip="3" data-rv="up" data-cursor><span class="num">04</span>
+      <span class="tx"><b>Post &amp; Finishing</b><span class="d">Compositing, colour and the final polish that makes every frame land.</span></span></a>
+  </div>
+</section>
+
+<!-- ============================================================ philosophy -->
+<section class="sec" id="about" data-cam="1" aria-labelledby="about-title">
+  <div class="fg" data-fg="about" aria-hidden="true">
+    <span class="fg-el fg-hill" data-fg-in="up">
+      <img src="assets/img/vajradhan8.webp" alt="" width="1400" height="700" loading="lazy" decoding="async">
+    </span>
+    <span class="fg-el fg-grass fg-el--sway" data-fg-in="right">
+      <img src="assets/img/vajradhan6.webp" alt="" width="1400" height="747" loading="lazy" decoding="async">
+    </span>
+  </div>
+  <div class="sec-head" data-rv="fade">
+    <span class="k"><b>01</b> — Philosophy</span><span class="rule"></span><span class="k">The studio</span>
+  </div>
+  <div class="story">
+    <h2 class="display h-sec" id="about-title" data-rv="up">We give shape to worlds that only existed as a feeling.</h2>
+    <div class="story-copy">
+      <p class="lead" data-rv="up">Vajradhan is a creative technology and visual production studio. We work where story meets
+        engineering, turning the ideas that are hardest to picture into images, worlds and experiences an audience can step inside.</p>
+      <p class="body" data-rv="up">Every project begins with a question nobody has answered visually yet. We answer it with concept
+        art, simulation, real-time engines and a finishing pass that treats every frame as the final one.</p>
+      <a class="arrowlink" href="#services" data-rv="fade" data-cursor>
+        <span>What we make</span>
+        <span class="ar" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg></span>
+      </a>
+    </div>
+  </div>
+  <div class="stats" data-rv="up">
+    <div><b>04</b><span>Disciplines</span></div>
+    <div><b>01</b><span>Pipeline, sketch to screen</span></div>
+    <div><b>∞</b><span>Worlds left to build</span></div>
+    <!-- TODO: replace with a real figure (e.g. projects delivered or years active) -->
+    <div><b>—</b><span>Projects delivered</span></div>
+  </div>
+</section>
+
+<!-- ============================================================ services -->
+<section class="sec" id="services" data-cam="2" aria-labelledby="services-title">
+  <div class="fg" data-fg="services" aria-hidden="true">
+    <span class="fg-el fg-stones" data-fg-in="right">
+      <img src="assets/img/vajradhan7.webp" alt="" width="1400" height="908" loading="lazy" decoding="async">
+    </span>
+    <span class="fg-el fg-grass fg-el--sway" data-fg-in="left">
+      <img src="assets/img/vajradhan6.webp" alt="" width="1400" height="747" loading="lazy" decoding="async">
+    </span>
+  </div>
+  <div class="sec-head" data-rv="fade">
+    <span class="k"><b>02</b> — Services</span><span class="rule"></span><span class="k">Four disciplines</span>
+  </div>
+  <div class="split-head">
+    <h2 class="display h-sec" id="services-title" data-rv="up">Four disciplines. One continuous pipeline.</h2>
+    <p class="body-lg" data-rv="up">Each discipline stands on its own, and each is stronger beside the other three. Bring us in at the
+      first sketch or the final grade.</p>
+  </div>
+  <div class="plates">
+    <article class="plate" data-focus="0" data-rv="up" data-cursor>
+      <span class="k">01</span>
+      <h3>Concept &amp; Design</h3>
+      <p>Worldbuilding, look development and design language: the visual rules a story will live by.</p>
+      <!-- TODO: confirm the service list -->
+      <ul><li>Worldbuilding</li><li>Look development</li><li>Previs</li></ul>
+      <i class="bar" aria-hidden="true"></i>
+    </article>
+    <article class="plate" data-focus="1" data-rv="up" data-cursor>
+      <span class="k">02</span>
+      <h3>VFX &amp; CGI</h3>
+      <p>Environments, simulation and effects, built for cinematic scale and made to sit invisibly in the shot.</p>
+      <ul><li>Environments</li><li>Simulation</li><li>CG integration</li></ul>
+      <i class="bar" aria-hidden="true"></i>
+    </article>
+    <article class="plate" data-focus="2" data-rv="up" data-cursor>
+      <span class="k">03</span>
+      <h3>Virtual Production</h3>
+      <p>Real-time worlds brought onto the stage, so the camera can find the shot on the day.</p>
+      <!-- TODO: name the real engines / volumes the studio works with -->
+      <ul><li>Real-time engines</li><li>LED stages</li><li>Virtual scouting</li></ul>
+      <i class="bar" aria-hidden="true"></i>
+    </article>
+    <article class="plate" data-focus="3" data-rv="up" data-cursor>
+      <span class="k">04</span>
+      <h3>Post &amp; Finishing</h3>
+      <p>Compositing, colour, clean-up and delivery: the last pass that makes every frame feel inevitable.</p>
+      <ul><li>Compositing</li><li>Colour</li><li>Delivery</li></ul>
+      <i class="bar" aria-hidden="true"></i>
+    </article>
+  </div>
+</section>
+
+<!-- ============================================================ selected work -->
+<section class="sec" id="work" data-cam="3" aria-labelledby="work-title">
+  <div class="fg" data-fg="work" aria-hidden="true">
+    <span class="fg-el fg-pine" data-fg-in="right">
+      <img src="assets/img/vajradhan9.webp" alt="" width="997" height="1400" loading="lazy" decoding="async">
+    </span>
+    <span class="fg-el fg-grass fg-el--sway" data-fg-in="left">
+      <img src="assets/img/vajradhan6.webp" alt="" width="1400" height="747" loading="lazy" decoding="async">
+    </span>
+  </div>
+  <div class="sec-head" data-rv="fade">
+    <span class="k"><b>03</b> — Selected work</span><span class="rule"></span><span class="k">Environment studies</span>
+  </div>
+  <div class="split-head">
+    <h2 class="display h-sec" id="work-title" data-rv="up">Stills from worlds in progress.</h2>
+    <!-- TODO: replace with real project names, clients and credits -->
+    <p class="body-lg" data-rv="up">A selection of environment studies. Project names, clients and credits will follow.</p>
+  </div>
+  <div class="cards" id="cards">
+    <!-- TODO: real project title and credits for each card -->
+    <article class="card" data-rv="up" data-cursor>
+      <div class="card-fr">
+        <span class="sr-only">Moonlit mountain lake beneath a starfield.</span>
+        <span class="card-ar" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg></span>
+        <i class="glow" aria-hidden="true" style="--gx:30.5%; --gy:24.4%; --gr:17%; --gt:6.1s; --gt2:9.7s; --gc1:rgba(214,228,255,.44); --gc2:rgba(120,150,205,.18)"></i>
+        <div class="card-lab"><b>Silver Reach</b><span>01</span></div>
+      </div>
+      <div class="card-meta"><span>Environment · CGI</span><span>01 / 04</span></div>
+    </article>
+    <article class="card" data-rv="up" data-cursor>
+      <div class="card-fr">
+        <span class="sr-only">A flooded temple corridor lit by candles and moonlight.</span>
+        <span class="card-ar" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg></span>
+        <i class="glow" aria-hidden="true" style="--gx:67.2%; --gy:10.6%; --gr:8%; --gt:7.3s; --gt2:11.2s; --gc1:rgba(214,228,255,.46); --gc2:rgba(120,150,205,.2)"></i>
+        <i class="glow glow--flame" aria-hidden="true" style="--gx:13.8%; --gy:60.5%; --gr:7%; --gt:3.7s; --gt2:5.3s; --gc1:rgba(255,198,124,.6); --gc2:rgba(226,118,40,.28)"></i>
+        <div class="card-lab"><b>The Sunken Hall</b><span>02</span></div>
+      </div>
+      <div class="card-meta"><span>Interior · Lighting</span><span>02 / 04</span></div>
+    </article>
+    <article class="card" data-rv="up" data-cursor>
+      <div class="card-fr">
+        <span class="sr-only">Ruined arches overlooking a misty valley under a full moon.</span>
+        <span class="card-ar" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg></span>
+        <i class="glow" aria-hidden="true" style="--gx:75.5%; --gy:26.6%; --gr:16%; --gt:6.7s; --gt2:10.3s; --gc1:rgba(214,228,255,.44); --gc2:rgba(120,150,205,.18)"></i>
+        <div class="card-lab"><b>Arches of Dusk</b><span>03</span></div>
+      </div>
+      <div class="card-meta"><span>Matte painting · Worldbuilding</span><span>03 / 04</span></div>
+    </article>
+    <article class="card" data-rv="up" data-cursor>
+      <div class="card-fr">
+        <span class="sr-only">A candle-lit shrine on stone steps above the clouds.</span>
+        <span class="card-ar" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg></span>
+        <i class="glow" aria-hidden="true" style="--gx:34.5%; --gy:14.6%; --gr:12%; --gt:5.9s; --gt2:9.1s; --gc1:rgba(214,228,255,.4); --gc2:rgba(120,150,205,.16)"></i>
+        <i class="glow glow--flame" aria-hidden="true" style="--gx:27%; --gy:48%; --gr:8%; --gt:3.3s; --gt2:4.9s; --gc1:rgba(255,198,124,.55); --gc2:rgba(226,118,40,.26)"></i>
+        <div class="card-lab"><b>Shrine at the Edge</b><span>04</span></div>
+      </div>
+      <div class="card-meta"><span>Concept · Look development</span><span>04 / 04</span></div>
+    </article>
+  </div>
+</section>
+
+<!-- ============================================================ process -->
+<section class="sec" id="process" data-cam="4" aria-labelledby="process-title">
+  <div class="fg" data-fg="process" aria-hidden="true">
+    <span class="fg-el fg-hill fg-el--flip" data-fg-in="up">
+      <img src="assets/img/vajradhan8.webp" alt="" width="1400" height="700" loading="lazy" decoding="async">
+    </span>
+    <span class="fg-el fg-stones" data-fg-in="left">
+      <img src="assets/img/vajradhan7.webp" alt="" width="1400" height="908" loading="lazy" decoding="async">
+    </span>
+  </div>
+  <div class="sec-head" data-rv="fade">
+    <span class="k"><b>04</b> — Process</span><span class="rule"></span><span class="k">Five phases</span>
+  </div>
+  <div class="split-head">
+    <h2 class="display h-sec" id="process-title" data-rv="up">From first sketch to final frame.</h2>
+    <p class="body-lg" data-rv="up">One team carries the work from the first conversation to the delivered master, so nothing is lost
+      in the hand-offs between them.</p>
+  </div>
+  <div class="rows">
+    <div class="row" data-focus="0"><span class="k">01</span><h3>Discover</h3>
+      <p>We listen, research and frame the question the visuals have to answer.</p><span class="t">Phase 01</span><i class="bar" aria-hidden="true"></i></div>
+    <div class="row" data-focus="1"><span class="k">02</span><h3>Design</h3>
+      <p>Concept art, look development and previs set the rules of the world.</p><span class="t">Phase 02</span><i class="bar" aria-hidden="true"></i></div>
+    <div class="row" data-focus="2"><span class="k">03</span><h3>Build</h3>
+      <p>Assets, environments and simulations are made production-ready.</p><span class="t">Phase 03</span><i class="bar" aria-hidden="true"></i></div>
+    <div class="row" data-focus="3"><span class="k">04</span><h3>Capture</h3>
+      <p>Virtual production and real-time sessions put the world in front of the lens.</p><span class="t">Phase 04</span><i class="bar" aria-hidden="true"></i></div>
+    <div class="row" data-focus="0"><span class="k">05</span><h3>Finish</h3>
+      <p>Compositing, grade and delivery, checked frame by frame.</p><span class="t">Phase 05</span><i class="bar" aria-hidden="true"></i></div>
+  </div>
+</section>
+
+<!-- ============================================================ contact -->
+<section class="sec fin" id="contact" data-cam="5" aria-labelledby="contact-title">
+  <div class="fg" data-fg="contact" aria-hidden="true">
+    <span class="fg-el fg-pine fg-el--flip" data-fg-in="left">
+      <img src="assets/img/vajradhan9.webp" alt="" width="997" height="1400" loading="lazy" decoding="async">
+    </span>
+    <span class="fg-el fg-grass fg-el--sway" data-fg-in="right">
+      <img src="assets/img/vajradhan6.webp" alt="" width="1400" height="747" loading="lazy" decoding="async">
+    </span>
+  </div>
+  <div class="eyebrow" data-rv="fade">05 — Contact</div>
+  <h2 class="display" id="contact-title" data-rv="up">Bring us the unimaginable.</h2>
+  <p class="body-lg" data-rv="up">Tell us about the world you are trying to build, and we will show you how we would bring it to the screen.</p>
+  <!-- TODO: replace with the studio's real enquiries address -->
+  <a class="cta" href="mailto:hello@example.com" data-rv="fade" data-cursor>
+    <i aria-hidden="true"></i><span>Start a project</span>
+    <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
+  </a>
+  <!-- TODO: studio location / time zone -->
+  <p class="fin-note" data-rv="fade">Studio location — to be announced</p>
+</section>
+
+<!-- ============================================================ footer -->
+<footer class="foot" data-cam="6">
+  <div class="fg" data-fg="foot" aria-hidden="true">
+    <span class="fg-el fg-stones" data-fg-in="up">
+      <img src="assets/img/vajradhan7.webp" alt="" width="1400" height="908" loading="lazy" decoding="async">
+    </span>
+    <span class="fg-el fg-grass fg-el--sway" data-fg-in="up">
+      <img src="assets/img/vajradhan6.webp" alt="" width="1400" height="747" loading="lazy" decoding="async">
+    </span>
+  </div>
+  <div class="foot-grid">
+    <div class="foot-brand">
+      <img src="assets/img/vajradhan-logo.webp" alt="Vajradhan" width="640" height="507" loading="lazy" decoding="async">
+      <p>A creative technology studio visualizing the unimaginable, through concept and design, VFX and CGI, virtual production, and finishing.</p>
+    </div>
+    <div><h4>Studio</h4><ul>
+      <li><a href="#about" data-cursor>Philosophy</a></li>
+      <li><a href="#services" data-cursor>Services</a></li>
+      <li><a href="#work" data-cursor>Selected work</a></li>
+      <li><a href="#process" data-cursor>Process</a></li>
+    </ul></div>
+    <div><h4>Disciplines</h4><ul>
+      <li><a href="#services" data-cursor>Concept &amp; Design</a></li>
+      <li><a href="#services" data-cursor>VFX &amp; CGI</a></li>
+      <li><a href="#services" data-cursor>Virtual Production</a></li>
+      <li><a href="#services" data-cursor>Post &amp; Finishing</a></li>
+    </ul></div>
+    <!-- TODO: real social profiles and address -->
+    <div><h4>Connect</h4><ul>
+      <li><a href="mailto:hello@example.com" data-cursor>Email</a></li>
+      <li><a href="#contact" data-cursor>Instagram</a></li>
+      <li><a href="#contact" data-cursor>LinkedIn</a></li>
+    </ul></div>
+  </div>
+  <div class="foot-base">
+    <span>© 2026 Vajradhan</span>
+    <span>Visualizing the unimaginable</span>
+    <span>WebGL · Onest · Unbounded</span>
+  </div>
+</footer>
+
+</main>
+
+<!-- The live chapter's near plane is parked here rather than inside its
+     section: .page is a stacking context, so nothing in it can pass the nav. -->
+<div id="fg-sky" aria-hidden="true"></div>
+<nav class="rail" id="rail" aria-label="Sections"></nav>
+
+<script src="vendor/three.min.js"></script>
+<script>
+/* =====================================================================
+   VAJRADHAN — a moonlit range, cut into depth and walked through.
+
+   The hero photograph is split into five planes (sky, moon, far range, mid
+   range, near ridge). Each is hung at its own depth and sized so that, from
+   the opening camera, all five project back onto exactly the original frame.
+   Scrolling then moves the camera into them, so the ranges separate, the near
+   ridge slides past and the far one comes forward — Kage's camera travel,
+   built from a photograph instead of a modelled temple.
+   ===================================================================== */
+(function () {
+'use strict';
+
+/* ------------------------------------------------------------ 0 · basics */
+const Q      = new URLSearchParams(location.search);
+const qs     = (k, d) => { const v = Q.get(k); return v === null ? d : v; };
+const qn     = (k, d) => { const v = Q.get(k); return v === null ? d : parseFloat(v); };
+const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const COARSE = matchMedia('(hover: none)').matches;
+
+const clamp  = (v, a, b) => v < a ? a : (v > b ? b : v);
+const sat    = v => clamp(v, 0, 1);
+const lerp   = (a, b, t) => a + (b - a) * t;
+const smooth = (e0, e1, x) => { const t = sat((x - e0) / (e1 - e0)); return t * t * (3 - 2 * t); };
+const easeOut= t => 1 - Math.pow(1 - t, 3);
+const TAU    = Math.PI * 2;
+/* frame-rate independent damping */
+const damp   = (cur, to, rate, dt) => lerp(cur, to, 1 - Math.exp(-rate * dt));
+const $  = s => document.querySelector(s);
+const $$ = s => [].slice.call(document.querySelectorAll(s));
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+function cvs(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+
+/* soft round falloff — haze, glows, snow */
+function texGlow(inner, mid) {
+  const S = 256, c = cvs(S, S), x = c.getContext('2d');
+  const g = x.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+  g.addColorStop(0, inner || 'rgba(255,255,255,1)');
+  g.addColorStop(.28, mid || 'rgba(255,255,255,.36)');
+  g.addColorStop(.62, 'rgba(255,255,255,.07)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = g; x.fillRect(0, 0, S, S);
+  return c;
+}
+/* a mote: a hard bright point inside a very faint, wide halo */
+function texWisp() {
+  const S = 128, c = cvs(S, S), x = c.getContext('2d');
+  const g = x.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S / 2);
+  g.addColorStop(0,   'rgba(255,255,255,1)');
+  g.addColorStop(.07, 'rgba(236,244,252,.92)');
+  g.addColorStop(.16, 'rgba(196,214,238,.40)');
+  g.addColorStop(.34, 'rgba(140,166,206,.13)');
+  g.addColorStop(.62, 'rgba(96,120,168,.035)');
+  g.addColorStop(1,   'rgba(70,96,142,0)');
+  x.fillStyle = g; x.fillRect(0, 0, S, S);
+  return c;
+}
+
+/* ============================================================ 1 · gl state */
+const canvas = document.getElementById('gl');
+/* the layout viewport — what CSS lays out against — not innerWidth */
+const vpW = () => document.documentElement.clientWidth  || innerWidth;
+const vpH = () => document.documentElement.clientHeight || innerHeight;
+let renderer = null, scene = null, camera = null, maxAniso = 1;
+const LOW          = qs('q', COARSE ? 'low' : 'high') === 'low';
+const WANT_POST    = qs('post', '1') !== '0';
+const DPR_CAP      = qn('dpr', LOW ? 1.5 : 2);
+const MSAA         = LOW ? 0 : 4;
+/* The scene is fill-bound — five screen-sized alpha planes, haze and a bloom
+   chain — so resolution is the knob. The governor trades multisampling away
+   first (cheapest to lose, least visible under grain), then pixels. */
+const PERF = { scale: 1, acc: 0, n: 0, calm: 0, msaa: MSAA, locked: qs('adapt', '1') === '0' };
+
+let FALLEN = false, BOOTED = false, running = false;
+const GL = { lost: false, timer: 0 };
+
+function initGL() {
+  if (qs('nogl', '0') !== '0') throw new Error('WebGL disabled by ?nogl');
+  if (!window.THREE) throw new Error('three.js did not load');
+  renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: !WANT_POST, alpha: false,
+    powerPreference: 'high-performance' });
+  /* Everything is authored and composited in display space: the plates are
+     photographs, already encoded, and no light is simulated on them. So no
+     texture is decoded and nothing is re-encoded on the way out. */
+  renderer.outputEncoding = THREE.LinearEncoding;
+  renderer.toneMapping = THREE.NoToneMapping;
+  renderer.setClearColor(0x18243a, 1);
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, DPR_CAP));
+  renderer.setSize(vpW(), vpH(), true);
+  maxAniso = renderer.capabilities.getMaxAnisotropy();
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x18243a);      /* the sky's own top colour */
+  camera = new THREE.PerspectiveCamera(CAM[0].fov, vpW() / vpH(), .1, 400);
+  scene.add(camera);
+
+  /* Kage never listened for these, so a dropped context — a mobile GPU
+     reclaiming memory, a long tab switch — left a black canvas under a page
+     that kept scrolling. three.js restores its own state on the second event;
+     the page stops drawing on the first, and either rebuilds on the second or
+     gives up and falls back if the context is not handed back in time. Both
+     listeners go on after the renderer's own, so they run after it. */
+  canvas.addEventListener('webglcontextlost', onContextLost, false);
+  canvas.addEventListener('webglcontextrestored', onContextRestored, false);
+}
+
+function onContextLost(e) {
+  e.preventDefault();                          /* ask for it back */
+  GL.lost = true; running = false;
+  console.warn('[vajradhan] WebGL context lost');
+  if (!BOOTED) { fallback(new Error('WebGL context lost during boot')); return; }
+  clearTimeout(GL.timer);
+  GL.timer = setTimeout(() => fallback(new Error('WebGL context was not restored')), 4000);
+}
+function onContextRestored() {
+  clearTimeout(GL.timer);
+  GL.lost = false;
+  if (FALLEN) return;
+  console.warn('[vajradhan] WebGL context restored — rebuilding');
+  try { rebuildAfterRestore(); }
+  catch (err) { fallback(err); }
+}
+/* The renderer has a fresh context and has forgotten every GPU resource. The
+   JS side still holds the images, canvases and render-target descriptions, so
+   flag every texture and material dirty, drop the targets and re-measure;
+   the next frame re-uploads the lot. */
+function rebuildAfterRestore() {
+  const dirty = m => {
+    if (!m) return;
+    (Array.isArray(m) ? m : [m]).forEach(mm => {
+      Object.keys(mm).forEach(k => { const v = mm[k]; if (v && v.isTexture) v.needsUpdate = true; });
+      if (mm.uniforms) Object.keys(mm.uniforms).forEach(k => {
+        const v = mm.uniforms[k].value; if (v && v.isTexture && !v.isRenderTargetTexture) v.needsUpdate = true;
+      });
+      mm.needsUpdate = true;
+    });
+  };
+  scene.traverse(o => dirty(o.material));
+  ['up', 'bright', 'blur', 'comp'].forEach(k => dirty(POST[k]));
+  if (POST.scene) { POST.scene.dispose(); POST.levels.forEach(L => { L.a.dispose(); L.b.dispose(); }); }
+  resize();
+  running = true; tPrev = performance.now(); queue();
+}
+
+function tx(img, o) {
+  o = o || {};
+  const t = img instanceof HTMLCanvasElement ? new THREE.CanvasTexture(img) : new THREE.Texture(img);
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  t.anisotropy = Math.min(o.aniso || 8, maxAniso);
+  t.needsUpdate = true;
+  return t;
+}
+function loadImage(url) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.decoding = 'async';
+    img.onload = () => res(img);
+    img.onerror = () => rej(new Error('could not load ' + url));
+    img.src = url;
+  });
+}
+
+/* ========================================================== 2 · the frame
+   The photograph's own geometry, in source pixels, for everything that has to
+   land on it: the moon, and the skyline the stars must stay above.        */
+const IMG_W = 2048, IMG_H = 1143, IA = IMG_W / IMG_H;
+const MOON_UV = [543 / IMG_W, 257 / IMG_H], MOON_R = 131 / IMG_W;
+const SKYLINE = [[0, 425], [95, 425], [200, 540], [265, 590], [400, 600], [520, 640], [680, 520],
+  [800, 545], [900, 462], [1000, 432], [1100, 330], [1215, 205], [1330, 300], [1410, 385],
+  [1500, 470], [1600, 500], [1690, 410], [1800, 490], [1900, 480], [1990, 300], [2048, 270]];
+function skylineV(u) {
+  const x = u * IMG_W;
+  for (let i = 0; i < SKYLINE.length - 1; i++) {
+    const a = SKYLINE[i], b = SKYLINE[i + 1];
+    if (x <= b[0]) return lerp(a[1], b[1], (x - a[0]) / (b[0] - a[0])) / IMG_H;
+  }
+  return SKYLINE[SKYLINE.length - 1][1] / IMG_H;
+}
+
+/* One overscan for every plane — if they differed they would not register
+   at the opening frame. Kept small so the hero holds the mock-up's framing;
+   the walk only ever moves forward into the planes, which gains margin, and
+   the pointer drift is sized to what is left at the sides. */
+const OVER = 1.14;
+/* back to front; `order` is the draw order, since every plane is blended */
+const PLANES = [
+  { key: 'sky',  url: 'assets/img/vajradhan1-sky.webp',  d: 95, order: 0,  haze: 0,   edge: 1 },
+  { key: 'moon', url: 'assets/img/vajradhan1-moon.webp', d: 82, order: 4,  haze: 0,   bright: 1.08 },
+  { key: 'far',  url: 'assets/img/vajradhan1-far.webp',  d: 45, order: 30, haze: .05 },
+  { key: 'mid',  url: 'assets/img/vajradhan1-mid.webp',  d: 22, order: 50, haze: .02, near: [1.2, 4.0] },
+  { key: 'near', url: 'assets/img/vajradhan1-near.webp', d: 7,  order: 60, haze: 0,   near: [.7, 2.9] }
+];
+const WORLD = { planes: {}, uT: { value: 0 } };
+
+const PLANE_VS = 'varying vec2 vUv;\nvoid main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }';
+const PLANE_FS = [
+  'uniform sampler2D map; uniform float uOpacity, uHaze, uBright, uEdge; uniform vec3 uHazeCol, uBg;',
+  'varying vec2 vUv;',
+  'void main(){',
+  '  vec4 t = texture2D(map, vUv);',
+  '  vec3 c = mix(t.rgb * uBright, uHazeCol, uHaze);',
+  /* the sky is the one plane whose border can come into view as the camera
+     tilts up to the moon; its edges dissolve into the scene colour, which is
+     the sky's own top colour, so there is no rim to find */
+  '  float e = smoothstep(0.0, 0.08, vUv.x) * smoothstep(1.0, 0.92, vUv.x) * smoothstep(1.0, 0.86, vUv.y);',
+  '  c = mix(c, uBg, uEdge * (1.0 - e));',
+  '  gl_FragColor = vec4(c, t.a * uOpacity);',
+  '}'].join('\n');
+
+function loadPlanes() {
+  return Promise.all(PLANES.map(P => loadImage(P.url).then(img => {
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        map: { value: tx(img, { aniso: 8 }) }, uOpacity: { value: 1 }, uHaze: { value: P.haze },
+        uBright: { value: P.bright || 1 }, uEdge: { value: P.edge || 0 },
+        uHazeCol: { value: new THREE.Color(0x606e7e) }, uBg: { value: new THREE.Color(0x18243a) }
+      },
+      vertexShader: PLANE_VS, fragmentShader: PLANE_FS,
+      transparent: true, depthTest: false, depthWrite: false
+    });
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+    m.renderOrder = P.order; m.frustumCulled = false; m.name = P.key;
+    scene.add(m);
+    WORLD.planes[P.key] = { mesh: m, def: P };
+  })));
+}
+
+/* Where the opening camera's frame lands at depth d, and how big the photo
+   has to be there to cover it. Every plane, the moon's halo and the stars go
+   through this, which is what keeps them registered. */
+function focus() {
+  const a = vpW() / vpH();
+  /* a portrait frame can only hold one of moon and peak: keep the peak */
+  return [a < .9 ? .57 : .5, a > 2.1 ? .46 : .5];
+}
+function cover(d) {
+  const vh = 2 * d * Math.tan(CAM[0].fov * Math.PI / 360), vw = vh * (vpW() / vpH());
+  const H = Math.max(vh, vw / IA) * OVER;
+  return [H * IA, H];
+}
+function uvToWorld(u, v, d, out) {
+  const s = cover(d), f = focus();
+  out.set((u - f[0]) * s[0], (f[1] - v) * s[1], -d);
+  return s;
+}
+const _v = new THREE.Vector3();
+function layoutPlanes() {
+  Object.keys(WORLD.planes).forEach(k => {
+    const P = WORLD.planes[k], s = uvToWorld(.5, .5, P.def.d, _v);
+    P.mesh.position.copy(_v);
+    P.mesh.scale.set(s[0], s[1], 1);
+  });
+  if (WORLD.halo) {
+    const s = uvToWorld(MOON_UV[0], MOON_UV[1], 81, _v);
+    WORLD.halo.position.copy(_v);
+    WORLD.halo.scale.setScalar(MOON_R * s[0] * 7.5);
+  }
+  layoutStars();
+}
+
+/* ========================================================== 3 · atmosphere */
+function buildMoonGlow() {
+  /* a wide, weak corona the bloom picks up; it only ever breathes */
+  const halo = new THREE.Mesh(new THREE.PlaneGeometry(1, 1),
+    new THREE.MeshBasicMaterial({ map: tx(texGlow('rgba(214,228,248,.9)', 'rgba(150,178,220,.24)')),
+      transparent: true, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, opacity: .34 }));
+  halo.renderOrder = 3; halo.frustumCulled = false;
+  scene.add(halo); WORLD.halo = halo;
+}
+
+/* Stars between the sky and the far range, so they drift a little against
+   the painted ones and slide behind the ridge when the camera moves. Each is
+   placed in photo coordinates above the skyline and projected through the
+   same cover mapping as the planes. */
+const STAR = { list: [] };
+function buildStars() {
+  const N = LOW ? 110 : 220, rnd = mulberry32(881);
+  const pos = new Float32Array(N * 3), seed = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    let u, v, k = 0;
+    do {
+      u = rnd(); v = rnd() * .5;
+      k++;
+    } while (k < 40 && (v > skylineV(u) - .05 ||
+             Math.hypot((u - MOON_UV[0]) * IA, v - MOON_UV[1]) < MOON_R * IA * 1.9));
+    STAR.list.push([u, v, 58 + rnd() * 28]);
+    seed[i] = rnd();
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
+  const pts = new THREE.Points(g, new THREE.ShaderMaterial({
+    uniforms: { uT: WORLD.uT, uTex: { value: tx(texWisp()) }, uPx: { value: 1 } },
+    transparent: true, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false,
+    vertexShader:
+      'attribute float aSeed; uniform float uT; uniform float uPx; varying float vA;\n' +
+      'void main(){ vec4 mv = modelViewMatrix * vec4(position,1.0);\n' +
+      ' vA = (0.30 + 0.70*aSeed) * (0.55 + 0.45*sin(uT*(0.5+aSeed*1.9) + aSeed*40.0));\n' +
+      ' gl_PointSize = uPx * (3.0 + aSeed*aSeed*7.0);\n' +
+      ' gl_Position = projectionMatrix * mv; }',
+    fragmentShader:
+      'uniform sampler2D uTex; varying float vA;\n' +
+      'void main(){ vec4 t = texture2D(uTex, gl_PointCoord); gl_FragColor = vec4(t.rgb*vec3(.9,.95,1.0), t.a*vA); }'
+  }));
+  pts.renderOrder = 8; pts.frustumCulled = false;
+  scene.add(pts); STAR.mesh = pts;
+  layoutStars();
+}
+function layoutStars() {
+  if (!STAR.mesh) return;
+  const P = STAR.mesh.geometry.attributes.position;
+  STAR.list.forEach((s, i) => { uvToWorld(s[0], s[1], s[2], _v); P.setXYZ(i, _v.x, _v.y, _v.z); });
+  P.needsUpdate = true;
+  STAR.mesh.material.uniforms.uPx.value = renderer.getPixelRatio();
+}
+
+/* Valley mist: big soft slabs hung between the ranges, drawn in the gaps of
+   the plane order so each one sits behind the ridge nearer than it. */
+function buildHaze() {
+  const map = tx(texGlow('rgba(176,196,222,.55)', 'rgba(118,140,172,.18)'));
+  const defs = [   /* x, y, z, width, opacity, order */
+    [-7, -3.2, -36, 38, .09, 35], [8, -2.8, -30, 30, .07, 45],
+    [-4, -1.9, -17, 18, .08, 55], [5, -1.6, -12, 14, .06, 55], [-2, -1.3, -9.5, 10, .05, 55]
+  ];
+  const rnd = mulberry32(66);
+  WORLD.haze = defs.map(D => {
+    const h = new THREE.Mesh(new THREE.PlaneGeometry(D[3], D[3] * .42),
+      new THREE.MeshBasicMaterial({ map: map, transparent: true, blending: THREE.AdditiveBlending,
+        depthTest: false, depthWrite: false, opacity: D[4] }));
+    h.position.set(D[0], D[1], D[2]); h.renderOrder = D[5]; h.frustumCulled = false;
+    h.userData = { x0: D[0], sp: .05 + rnd() * .08, ph: rnd() * TAU, o: D[4] };
+    scene.add(h);
+    return h;
+  });
+}
+
+/* Snow — the range's own weather, in place of Kage's falling maple. A box of
+   motes over the whole walk, animated entirely in the vertex shader. */
+function buildSnow() {
+  if (REDUCE) return;
+  const N = LOW ? 160 : 360, rnd = mulberry32(404);
+  const pos = new Float32Array(N * 3), seed = new Float32Array(N);
+  for (let i = 0; i < N; i++) {
+    pos[i * 3] = (rnd() - .5) * 16; pos[i * 3 + 1] = rnd() * 9 - 3.5; pos[i * 3 + 2] = -1 - rnd() * 21;
+    seed[i] = rnd();
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  g.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
+  const snow = new THREE.Points(g, new THREE.ShaderMaterial({
+    uniforms: { uT: WORLD.uT, uTex: { value: tx(texWisp()) }, uSize: { value: vpH() } },
+    transparent: true, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false,
+    vertexShader:
+      'attribute float aSeed; uniform float uT; uniform float uSize; varying float vA;\n' +
+      'void main(){ vec3 p = position;\n' +
+      ' p.y = mod(p.y + 3.5 - uT*(0.10 + aSeed*0.22), 9.0) - 3.5;\n' +
+      ' p.x += sin(uT*(0.23 + aSeed*0.3) + aSeed*31.0)*0.7 + uT*0.05;\n' +
+      ' p.x = mod(p.x + 8.0, 16.0) - 8.0;\n' +
+      ' p.z += cos(uT*0.19 + aSeed*17.0)*0.4;\n' +
+      ' vec4 mv = modelViewMatrix * vec4(p,1.0);\n' +
+      ' float dz = -mv.z;\n' +
+      ' vA = (0.25 + aSeed*0.55) * smoothstep(0.3, 1.2, dz) * (1.0 - smoothstep(12.0, 20.0, dz))\n' +
+      '      * smoothstep(-3.5, -2.5, p.y) * (1.0 - smoothstep(4.5, 5.5, p.y));\n' +
+      ' gl_PointSize = uSize * (0.006 + aSeed*0.012) / max(dz, 0.3);\n' +
+      ' gl_Position = projectionMatrix * mv; }',
+    fragmentShader:
+      'uniform sampler2D uTex; varying float vA;\n' +
+      'void main(){ vec4 t = texture2D(uTex, gl_PointCoord); gl_FragColor = vec4(t.rgb, t.a*vA*0.8); }'
+  }));
+  snow.renderOrder = 70; snow.frustumCulled = false;
+  scene.add(snow); WORLD.snow = snow;
+}
+
+/* ============================================ 4 · the cursor wisps (Kage)
+   A drift of cold motes following the pointer. They hang as a child of the
+   camera so the trail stays under the hand while the rig moves, and they are
+   emitted by distance travelled, not by time. */
+const WISP_D = 3.4;
+const WISP = { list: [], i: 0, acc: 0, ex: 0, ey: 0, lx: 0, ly: 0, idle: 0, seen: false };
+function buildWisps() {
+  if (COARSE || REDUCE) return;
+  const N = LOW ? 90 : 190;
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(N * 3), 3));
+  g.setAttribute('aA', new THREE.BufferAttribute(new Float32Array(N), 1));
+  g.setAttribute('aS', new THREE.BufferAttribute(new Float32Array(N), 1));
+  const pts = new THREE.Points(g, new THREE.ShaderMaterial({
+    uniforms: { uTex: { value: tx(texWisp()) }, uPx: { value: vpH() } },
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, depthTest: false,
+    vertexShader:
+      'attribute float aA; attribute float aS; uniform float uPx; varying float vA;\n' +
+      'void main(){ vA = aA; vec4 mv = modelViewMatrix * vec4(position,1.0);\n' +
+      ' gl_PointSize = uPx * aS / max(-mv.z, 0.4); gl_Position = projectionMatrix * mv; }',
+    fragmentShader:
+      'uniform sampler2D uTex; varying float vA;\n' +
+      'void main(){ if (vA <= 0.0) discard; vec4 t = texture2D(uTex, gl_PointCoord); gl_FragColor = vec4(t.rgb, t.a*vA); }'
+  }));
+  pts.frustumCulled = false; pts.renderOrder = 90;
+  camera.add(pts);
+  WISP.mesh = pts;
+  for (let i = 0; i < N; i++) WISP.list.push({ life: 0, max: 1, vx: 0, vy: 0, sz: 0, ph: 0 });
+}
+function wispPoint(nx, ny) {
+  const hh = Math.tan(camera.fov * Math.PI / 360) * WISP_D;
+  return [nx * hh * camera.aspect, ny * hh];
+}
+function updateWisps(dt) {
+  if (!WISP.mesh) return;
+  const g = WISP.mesh.geometry;
+  const P = g.attributes.position.array, A = g.attributes.aA.array, S = g.attributes.aS.array;
+  const L = WISP.list, N = L.length;
+  const pt = wispPoint(RIG.tmx, RIG.tmy);
+  if (!WISP.seen) { WISP.ex = WISP.lx = pt[0]; WISP.ey = WISP.ly = pt[1]; WISP.seen = true; }
+  WISP.ex = damp(WISP.ex, pt[0], 16, dt);
+  WISP.ey = damp(WISP.ey, pt[1], 16, dt);
+  const dx = WISP.ex - WISP.lx, dy = WISP.ey - WISP.ly;
+  const moved = Math.hypot(dx, dy);
+  const ang = moved > 1e-5 ? Math.atan2(dy, dx) : 0;
+  const spawn = (x, y, a, weak) => {
+    const i = WISP.i; WISP.i = (i + 1) % N;
+    const w = L[i], k = i * 3;
+    P[k] = x + (Math.random() + Math.random() - 1) * .30;
+    P[k + 1] = y + (Math.random() + Math.random() - 1) * .30;
+    P[k + 2] = -WISP_D + (Math.random() - .5) * .9;
+    w.life = 0; w.max = (weak ? 2.1 : 1.45) + Math.random() * 1.3;
+    w.vx = -Math.cos(a) * .09 + (Math.random() - .5) * .38;
+    w.vy = -Math.sin(a) * .09 + (Math.random() - .5) * .32 + .02;
+    w.sz = (weak ? .018 : .024) + Math.random() * .026;
+    w.ph = Math.random() * TAU;
+  };
+  WISP.acc += moved;
+  const STEP = .030;
+  let guard = 0;
+  while (WISP.acc >= STEP && guard++ < 14) {
+    WISP.acc -= STEP;
+    const t = moved > 1e-6 ? Math.min(1, guard * STEP / moved) : 0;
+    spawn(WISP.lx + dx * t, WISP.ly + dy * t, ang, false);
+  }
+  WISP.idle += dt;
+  if (WISP.idle > .42) { WISP.idle = 0; spawn(WISP.ex, WISP.ey, Math.random() * TAU, true); }
+  WISP.lx = WISP.ex; WISP.ly = WISP.ey;
+  for (let i = 0; i < N; i++) {
+    const w = L[i], k = i * 3;
+    if (w.life >= w.max) { A[i] = 0; continue; }
+    w.life += dt;
+    const u = w.life / w.max;
+    P[k]     += (w.vx + Math.sin(clock * 1.3 + w.ph) * .17) * dt;
+    P[k + 1] += (w.vy + Math.cos(clock * 1.1 + w.ph * 1.7) * .14) * dt;
+    w.vx *= 1 - .5 * dt; w.vy = w.vy * (1 - .5 * dt) + .022 * dt;
+    A[i] = smooth(0, .12, u) * (1 - smooth(.22, 1, u)) * .9;
+    S[i] = w.sz * (1 + u * .55);
+  }
+  g.attributes.position.needsUpdate = true;
+  g.attributes.aA.needsUpdate = true;
+  g.attributes.aS.needsUpdate = true;
+}
+
+/* ================================================ 5 · the giant wordmark
+   Kage's rising letters, moved to the close. VAJRADHAN hangs just in front of
+   the mid range, low in the closing frame, and climbs into place letter by
+   letter as the walk arrives at Contact. (Hung behind the mid ridge it was
+   occluded by the left-hand peak and read as "RADHAN".) */
+const WORD_Z = -16;
+const WORD = { glyphs: [], group: null, ink: null, reveal: 0 };
+function buildWordmark() {
+  const SZ = 280, TRACK = .16, PAD = 26, FONT = '500 ' + SZ + 'px Unbounded, Onest, sans-serif';
+  const m = cvs(4, 4).getContext('2d');
+  m.font = FONT; m.textBaseline = 'alphabetic';
+  const word = 'VAJRADHAN', gl = [];
+  let pen = 0, ascMax = 0, descMax = 0, xMin = 1e9, xMax = -1e9;
+  for (const ch of word) {
+    const t = m.measureText(ch);
+    const g = { ch: ch, adv: t.width, asc: t.actualBoundingBoxAscent, desc: t.actualBoundingBoxDescent,
+                l: t.actualBoundingBoxLeft, r: t.actualBoundingBoxRight, pen: pen };
+    gl.push(g);
+    ascMax = Math.max(ascMax, g.asc); descMax = Math.max(descMax, g.desc);
+    xMin = Math.min(xMin, pen - g.l); xMax = Math.max(xMax, pen + g.r);
+    pen += t.width + TRACK * SZ;
+  }
+  const group = new THREE.Group();
+  gl.forEach(g => {
+    const cw = Math.ceil(g.l + g.r) + PAD * 2, chh = Math.ceil(g.asc + g.desc) + PAD * 2;
+    const c = cvs(cw, chh), x = c.getContext('2d');
+    x.font = FONT; x.textBaseline = 'alphabetic';
+    const gy0 = PAD + g.asc - ascMax, gy1 = PAD + g.asc + descMax * .4;
+    const grad = x.createLinearGradient(0, gy0, 0, gy1);
+    grad.addColorStop(0, 'rgb(236,242,246)');
+    grad.addColorStop(.55, 'rgb(196,210,222)');
+    grad.addColorStop(1, 'rgb(128,146,166)');
+    x.fillStyle = grad;
+    x.fillText(g.ch, PAD + g.l, PAD + g.asc);
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(cw, chh),
+      new THREE.MeshBasicMaterial({ map: tx(c, { aniso: 16 }), transparent: true,
+        depthTest: false, depthWrite: false, opacity: 0 }));
+    mesh.position.set(g.pen + (g.r - g.l) / 2, (g.asc - g.desc) / 2, 0);
+    mesh.renderOrder = 52; mesh.frustumCulled = false; mesh.visible = false;
+    mesh.userData.baseY = mesh.position.y;
+    group.add(mesh);
+    WORD.glyphs.push(mesh);
+  });
+  scene.add(group);
+  WORD.group = group;
+  WORD.ink = { cx: (xMin + xMax) / 2, w: xMax - xMin, asc: ascMax };
+  layoutWord();
+}
+let tmpCam = null;
+function layoutWord() {
+  if (!WORD.group || !tmpCam) return;
+  const c = CAM[5];
+  tmpCam.fov = c.fov; tmpCam.aspect = vpW() / vpH();
+  tmpCam.position.set(c.p[0], c.p[1], c.p[2]);
+  tmpCam.lookAt(c.t[0], c.t[1], c.t[2]);
+  tmpCam.updateProjectionMatrix(); tmpCam.updateMatrixWorld(true);
+  const hit = (nx, ny) => {
+    const v = new THREE.Vector3(nx, ny, .5).unproject(tmpCam).sub(tmpCam.position).normalize();
+    return tmpCam.position.clone().addScaledVector(v, (WORD_Z - tmpCam.position.z) / v.z);
+  };
+  const L = hit(-1, 0), R = hit(1, 0);
+  const narrow = vpW() / vpH() < 1.05;
+  const s = (R.x - L.x) * (narrow ? .9 : .8) / WORD.ink.w;
+  /* low in the frame, under the call to action rather than behind it */
+  const base = hit(0, narrow ? -.62 : -.86);
+  WORD.group.scale.setScalar(s);
+  WORD.group.position.set(-WORD.ink.cx * s + (L.x + R.x) / 2, base.y, WORD_Z);
+  /* Tip the word back by the closing camera's own tilt so it is square to
+     that frame. Pitch only: the group's origin is the word's left end, so
+     aiming it at the camera with lookAt would also yaw it by the offset. */
+  WORD.group.rotation.set(Math.atan2(c.t[1] - c.p[1], c.p[2] - c.t[2]), 0, 0);
+}
+
+/* ====================================================== 6 · cloth plates
+   Kage's port of the Canvas UI cloth: each work still hangs as a fabric in its
+   own WebGL2 canvas, billowing on a wind field and lifting under the pointer.
+   It hard-stops off screen and once the fabric settles. If its context is
+   lost it simply removes itself and the card's CSS still shows the image. */
+const CLOTH_VERT = `#version 300 es
+precision highp float;
+layout(location = 0) in vec2 aGrid;
+layout(location = 1) in vec4 aData;
+layout(location = 2) in vec2 aOffset;
+uniform vec2 uRes; uniform vec2 uOut; uniform float uBleed; uniform float uFocal;
+out vec2 vUv; out vec3 vNormal; out float vFold; out vec2 vLocal;
+void main () {
+  vUv = aGrid;
+  float z = aData.x;
+  vec2 nxy = aData.yz;
+  vNormal = vec3(nxy, sqrt(max(1.0 - dot(nxy, nxy), 0.04)));
+  vFold = aData.w;
+  vLocal = aGrid * uRes;
+  vec2 px = vLocal + aOffset + vec2(uBleed);
+  vec2 ndc = (px / uOut) * 2.0 - 1.0;
+  ndc.y = -ndc.y;
+  float w = (uFocal - z) / uFocal;
+  gl_Position = vec4(ndc, -z / uFocal, w);
+}`;
+const CLOTH_SDF = `
+float fabricDist (vec2 p, vec2 size, float radius) {
+  vec2 half_ = size * 0.5;
+  float r = min(radius, min(half_.x, half_.y));
+  vec2 q = abs(p - half_) - (half_ - vec2(r));
+  return length(max(q, vec2(0.0))) + min(max(q.x, q.y), 0.0) - r;
+}`;
+const CLOTH_FRAG = `#version 300 es
+precision highp float;
+in vec2 vUv; in vec3 vNormal; in float vFold; in vec2 vLocal;
+out vec4 outColor;
+uniform sampler2D uContent; uniform float uLight;
+uniform float uSheen; uniform vec3 uBacking; uniform vec2 uRes;
+uniform float uRadius; uniform float uDark; uniform float uEdge;
+${CLOTH_SDF}
+void main () {
+  vec2 uv = clamp(vUv, vec2(0.001), vec2(0.999));
+  vec4 tex = texture(uContent, uv);
+  vec3 fabric = mix(uBacking, tex.rgb, tex.a);
+  vec3 n = normalize(vNormal);
+  vec3 lightDir = normalize(vec3(-0.3, 0.42, 0.86));
+  float diffFlat = 0.58 + 0.42 * lightDir.z;
+  float diff = 0.58 + 0.42 * dot(n, lightDir);
+  float shade = mix(1.0, (diff / diffFlat) * vFold, uLight);
+  vec3 lit = fabric * shade;
+  vec3 halfway = normalize(lightDir + vec3(0.0, 0.0, 1.0));
+  float specFlat = pow(halfway.z, 34.0);
+  float spec = max(pow(max(dot(n, halfway), 0.0), 34.0) - specFlat, 0.0) / (1.0 - specFlat);
+  lit += uSheen * spec * mix(vec3(1.0), fabric, 0.35);
+  float broadFlat = pow(halfway.z, 6.0);
+  float broad = max(pow(max(dot(n, halfway), 0.0), 6.0) - broadFlat, 0.0) / (1.0 - broadFlat);
+  lit += uDark * uLight * 0.3 * broad * vec3(1.0);
+  float d = fabricDist(vLocal, uRes, uRadius);
+  float hemT = smoothstep(0.0, 6.0, -d);
+  lit *= mix(1.0, mix(0.93, 1.0, hemT), uLight * (1.0 - uDark));
+  lit += vec3(uDark * uLight * 0.08 * (1.0 - hemT));
+  float rim = smoothstep(1.05, 0.2, abs(d + 0.7));
+  lit += rim * uEdge * vec3(0.894, 0.922, 0.941);
+  float alpha = clamp(0.5 - d, 0.0, 1.0);
+  outColor = vec4(clamp(lit, 0.0, 1.0), 1.0) * alpha;
+}`;
+const CLOTH_SHADOW_VERT = `#version 300 es
+precision highp float;
+layout(location = 0) in vec2 aGrid;
+layout(location = 1) in vec4 aData;
+layout(location = 2) in vec2 aOffset;
+uniform vec2 uRes; uniform vec2 uOut; uniform float uBleed;
+out vec2 vLocal; out float vLift;
+void main () {
+  float z = aData.x;
+  vLift = z;
+  vLocal = aGrid * uRes;
+  vec2 px = vLocal + aOffset + vec2(uBleed) + vec2(10.0, 14.0) + vec2(0.3, 0.42) * z;
+  vec2 ndc = (px / uOut) * 2.0 - 1.0;
+  ndc.y = -ndc.y;
+  gl_Position = vec4(ndc, 0.0, 1.0);
+}`;
+const CLOTH_SHADOW_FRAG = `#version 300 es
+precision highp float;
+in vec2 vLocal; in float vLift;
+out vec4 outColor;
+uniform float uShadow; uniform vec2 uRes; uniform float uRadius; uniform float uDark;
+${CLOTH_SDF}
+void main () {
+  float d = fabricDist(vLocal, uRes, uRadius);
+  float a = uShadow * smoothstep(0.0, 30.0, -d);
+  a *= mix(1.0, 0.55, clamp(vLift / 50.0, 0.0, 1.0));
+  a *= mix(1.0, 0.55, uDark);
+  outColor = vec4(vec3(uDark) * a, a);
+}`;
+const CL_SEG = 96, CL_NODES = CL_SEG + 1, CL_DT = 1 / 120;
+const CL_WAVE = 30, CL_STIFF = 0.55, CL_GAIN = 5.0, CL_BLEED = 48;
+
+function createCloth(output, plate, config, onLost) {
+  const wrapper = output.parentElement;
+  output.style.top = output.style.left = -CL_BLEED + 'px';
+  output.style.width = 'calc(100% + ' + CL_BLEED * 2 + 'px)';
+  output.style.height = 'calc(100% + ' + CL_BLEED * 2 + 'px)';
+  const gl = output.getContext('webgl2', { alpha: true, depth: false, stencil: false,
+    antialias: true, premultipliedAlpha: true });
+  if (!gl || gl.isContextLost()) return null;
+
+  const compile = (type, text) => {
+    const sh = gl.createShader(type);
+    gl.shaderSource(sh, text); gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw new Error('cloth shader: ' + gl.getShaderInfoLog(sh));
+    return sh;
+  };
+  const link = (v, f) => {
+    const prog = gl.createProgram();
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, v)); gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, f));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error('cloth link: ' + gl.getProgramInfoLog(prog));
+    const u = {}, n = gl.getProgramParameter(prog, gl.ACTIVE_UNIFORMS);
+    for (let i = 0; i < n; i++) { const info = gl.getActiveUniform(prog, i); u[info.name] = gl.getUniformLocation(prog, info.name); }
+    return { program: prog, uniforms: u };
+  };
+  const cloth = link(CLOTH_VERT, CLOTH_FRAG);
+  const shadow = link(CLOTH_SHADOW_VERT, CLOTH_SHADOW_FRAG);
+
+  const gridVerts = new Float32Array(CL_NODES * CL_NODES * 2);
+  for (let y = 0; y < CL_NODES; y++) for (let x = 0; x < CL_NODES; x++) {
+    const i = (y * CL_NODES + x) * 2; gridVerts[i] = x / CL_SEG; gridVerts[i + 1] = y / CL_SEG;
+  }
+  const idx = new Uint32Array(CL_SEG * CL_SEG * 6);
+  let o = 0;
+  for (let y = 0; y < CL_SEG; y++) for (let x = 0; x < CL_SEG; x++) {
+    const a = y * CL_NODES + x, b = a + 1, c = a + CL_NODES, d = c + 1;
+    idx[o++] = a; idx[o++] = c; idx[o++] = b; idx[o++] = b; idx[o++] = c; idx[o++] = d;
+  }
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  const gridBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, gridBuf); gl.bufferData(gl.ARRAY_BUFFER, gridVerts, gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  const dataBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, dataBuf); gl.bufferData(gl.ARRAY_BUFFER, CL_NODES * CL_NODES * 16, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 0, 0);
+  const offBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, offBuf); gl.bufferData(gl.ARRAY_BUFFER, CL_NODES * CL_NODES * 8, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 0, 0);
+  const idxBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, idxBuf); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
+  gl.bindVertexArray(null);
+
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 0]));
+  function upload() {
+    const c = plate();
+    if (!c || !c.width) return;
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+  }
+  function syncSize() {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    const w = Math.max(1, Math.round(output.clientWidth * dpr)), h = Math.max(1, Math.round(output.clientHeight * dpr));
+    if (output.width !== w || output.height !== h) { output.width = w; output.height = h; }
+  }
+
+  let hCur = new Float32Array(CL_NODES * CL_NODES), hPrev = new Float32Array(CL_NODES * CL_NODES);
+  let hNext = new Float32Array(CL_NODES * CL_NODES);
+  const vData = new Float32Array(CL_NODES * CL_NODES * 4), oData = new Float32Array(CL_NODES * CL_NODES * 2);
+  const zF = new Float32Array(CL_NODES * CL_NODES);
+  const rowF = new Float32Array(CL_NODES), colF = new Float32Array(CL_NODES), hang = new Float32Array(CL_NODES);
+  for (let a = 0; a < CL_NODES; a++) hang[a] = Math.pow(a / CL_SEG, 1.3);
+  let simTime = Math.random() * 60, gust = .5, energy = 1;
+  let edge = .048, edgeTo = .048;
+  const ptr = { x: -1e5, y: -1e5, inside: false };
+  const touch = { x: -1e5, y: -1e5, vx: 0, vy: 0, s: 0 };
+
+  function stepSim(dt) {       /* pinned along the top edge */
+    simTime += dt * config.speed;
+    const t = simTime, windAmp = CL_GAIN * config.wind * gust;
+    const kb1 = TAU / (CL_SEG / 1.5), kb2 = TAU / (CL_SEG / 3.8), ka = TAU / (CL_SEG / 2.2);
+    const w1 = CL_WAVE * kb1, w2 = CL_WAVE * kb2, drift = 1.8 * Math.sin(.23 * t);
+    for (let b = 0; b < CL_NODES; b++) rowF[b] = Math.sin(kb1 * b - w1 * t + drift) + .45 * Math.sin(kb2 * b + w2 * t * .8 + 3);
+    for (let a = 0; a < CL_NODES; a++) colF[a] = (.7 + .3 * Math.sin(ka * a - 1.7 * t)) * hang[a];
+    const c2 = CL_WAVE * CL_WAVE, dt2 = dt * dt, decay = Math.exp(-config.damping * dt);
+    for (let y = 0; y < CL_NODES; y++) {
+      const up = Math.max(y - 1, 0) * CL_NODES, down = Math.min(y + 1, CL_SEG) * CL_NODES, row = y * CL_NODES;
+      for (let x = 0; x < CL_NODES; x++) {
+        const i = row + x, h = hCur[i];
+        const lap = hCur[row + Math.max(x - 1, 0)] + hCur[row + Math.min(x + 1, CL_SEG)] + hCur[up + x] + hCur[down + x] - 4 * h;
+        const next = 2 * h - hPrev[i] + dt2 * (c2 * lap - CL_STIFF * h + windAmp * rowF[x] * colF[y]);
+        let v = h + (next - h) * decay;
+        if (v > 3.5) v = 3.5; else if (v < -3.5) v = -3.5;
+        hNext[i] = v;
+      }
+    }
+    for (let b = 0; b < CL_NODES; b++) hNext[b] = 0;
+    const spent = hPrev; hPrev = hCur; hCur = hNext; hNext = spent;
+  }
+  function imprint(delta, width, height) {
+    if (touch.s < .01) return;
+    const cw = width / CL_SEG, ch = height / CL_SEG;
+    const rx = config.brushSize / cw, ry = config.brushSize / ch, gx = touch.x / cw, gy = touch.y / ch;
+    const x0 = Math.max(Math.ceil(gx - 2.5 * rx), 0), x1 = Math.min(Math.floor(gx + 2.5 * rx), CL_SEG);
+    const y0 = Math.max(Math.ceil(gy - 2.5 * ry), 0), y1 = Math.min(Math.floor(gy + 2.5 * ry), CL_SEG);
+    const lift = 1.1 * config.brush * touch.s, rate = Math.min(delta * 4, 1);
+    for (let y = y0; y <= y1; y++) {
+      const oy = (y - gy) / ry, row = y * CL_NODES;
+      for (let x = x0; x <= x1; x++) {
+        const ox = (x - gx) / rx, g = Math.exp(-(ox * ox + oy * oy));
+        if (g < .02) continue;
+        const i = row + x, pull = rate * g, goal = lift * g;
+        hCur[i] += (goal - hCur[i]) * pull; hPrev[i] += (goal - hPrev[i]) * pull;
+      }
+    }
+  }
+  function foreshorten(stride, lineStride, ds, anchor, comp) {
+    const ds2 = ds * ds;
+    for (let l = 0; l < CL_NODES; l++) {
+      const base = l * lineStride;
+      oData[(base + anchor * stride) * 2 + comp] = 0;
+      let cum = 0;
+      for (let k = anchor + 1; k < CL_NODES; k++) {
+        const i = base + k * stride, dz = zF[i] - zF[i - stride];
+        cum += ds - Math.sqrt(Math.max(ds2 - dz * dz, 0)); oData[i * 2 + comp] = -cum;
+      }
+      cum = 0;
+      for (let k = anchor - 1; k >= 0; k--) {
+        const i = base + k * stride, dz = zF[i] - zF[i + stride];
+        cum += ds - Math.sqrt(Math.max(ds2 - dz * dz, 0)); oData[i * 2 + comp] = cum;
+      }
+    }
+  }
+  function compose(width, height) {
+    const drape = config.drape * (.3 + .7 * gust), cw = width / CL_SEG, ch = height / CL_SEG;
+    let e = 0;
+    for (let y = 0; y < CL_NODES; y++) {
+      const row = y * CL_NODES;
+      for (let x = 0; x < CL_NODES; x++) {
+        const i = row + x, h = hCur[i];
+        if (Math.abs(h) > e) e = Math.abs(h);
+        zF[i] = config.amplitude * Math.tanh(h) + drape * hang[y];
+      }
+    }
+    energy = e;
+    for (let y = 0; y < CL_NODES; y++) {
+      const up = Math.max(y - 1, 0) * CL_NODES, down = Math.min(y + 1, CL_SEG) * CL_NODES, row = y * CL_NODES;
+      for (let x = 0; x < CL_NODES; x++) {
+        const i = row + x, l = row + Math.max(x - 1, 0), r = row + Math.min(x + 1, CL_SEG);
+        const dzdx = (zF[r] - zF[l]) / (2 * cw), dzdy = (zF[down + x] - zF[up + x]) / (2 * ch);
+        const inv = 1 / Math.hypot(dzdx, dzdy, 1);
+        const curve = zF[l] + zF[r] + zF[up + x] + zF[down + x] - 4 * zF[i];
+        let fold = 1 - curve * .01;
+        if (fold < .86) fold = .86; else if (fold > 1.06) fold = 1.06;
+        const q = i * 4;
+        vData[q] = zF[i]; vData[q + 1] = -dzdx * inv; vData[q + 2] = -dzdy * inv; vData[q + 3] = fold;
+      }
+    }
+    foreshorten(CL_NODES, 1, ch, 0, 1);
+    foreshorten(1, CL_NODES, cw, CL_SEG >> 1, 0);
+  }
+  const backing = [.03, .04, .06], dark = 1;
+  function draw() {
+    const resW = Math.max(wrapper.clientWidth, 1), resH = Math.max(wrapper.clientHeight, 1);
+    const outW = Math.max(output.clientWidth, 1), outH = Math.max(output.clientHeight, 1);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, output.width, output.height);
+    gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.bindVertexArray(vao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, dataBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, vData);
+    gl.bindBuffer(gl.ARRAY_BUFFER, offBuf); gl.bufferSubData(gl.ARRAY_BUFFER, 0, oData);
+    gl.useProgram(shadow.program);
+    gl.uniform2f(shadow.uniforms.uRes, resW, resH); gl.uniform2f(shadow.uniforms.uOut, outW, outH);
+    gl.uniform1f(shadow.uniforms.uBleed, CL_BLEED); gl.uniform1f(shadow.uniforms.uShadow, config.shadow);
+    gl.uniform1f(shadow.uniforms.uRadius, config.cornerRadius); gl.uniform1f(shadow.uniforms.uDark, dark);
+    gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_INT, 0);
+    gl.useProgram(cloth.program);
+    gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.uniform1i(cloth.uniforms.uContent, 0);
+    gl.uniform2f(cloth.uniforms.uRes, resW, resH); gl.uniform2f(cloth.uniforms.uOut, outW, outH);
+    gl.uniform1f(cloth.uniforms.uBleed, CL_BLEED); gl.uniform1f(cloth.uniforms.uFocal, config.perspective);
+    gl.uniform1f(cloth.uniforms.uLight, config.light); gl.uniform1f(cloth.uniforms.uSheen, config.sheen);
+    gl.uniform1f(cloth.uniforms.uRadius, config.cornerRadius); gl.uniform1f(cloth.uniforms.uDark, dark);
+    gl.uniform1f(cloth.uniforms.uEdge, edge);
+    gl.uniform3f(cloth.uniforms.uBacking, backing[0], backing[1], backing[2]);
+    gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_INT, 0);
+    gl.bindVertexArray(null);
+  }
+  let raf = 0, last = performance.now(), debt = 0, run = false, visible = false, dead = false;
+  function frame(now) {
+    if (dead) return;
+    if (!visible) { run = false; return; }
+    const delta = Math.min((now - last) / 1000, 1 / 20);
+    last = now;
+    const width = Math.max(wrapper.clientWidth, 1), height = Math.max(wrapper.clientHeight, 1);
+    const t = simTime;
+    const target = Math.max(.55 + .35 * Math.sin(t * .31 + 1.3) + .25 * Math.sin(t * .83) * (.5 + .5 * Math.sin(t * .17)), .15);
+    gust += (target - gust) * Math.min(delta * 2, 1);
+    const sT = ptr.inside ? 1 : 0;
+    touch.s += (sT - touch.s) * Math.min(delta * (ptr.inside ? 8 : 2.5), 1);
+    const om = 14;
+    touch.vx += ((ptr.x - touch.x) * om * om - 2 * om * touch.vx) * delta;
+    touch.vy += ((ptr.y - touch.y) * om * om - 2 * om * touch.vy) * delta;
+    touch.x += touch.vx * delta; touch.y += touch.vy * delta;
+    imprint(delta, width, height);
+    edge += (edgeTo - edge) * Math.min(delta * 5, 1);
+    debt = Math.min(debt + delta, CL_DT * 5);
+    while (debt >= CL_DT) { stepSim(CL_DT); debt -= CL_DT; }
+    compose(width, height);
+    draw();
+    if (config.wind <= .001 && energy < .004 && touch.s < .01) { run = false; return; }
+    raf = requestAnimationFrame(frame);
+  }
+  function start() {
+    if (dead || run || !visible) return;
+    run = true; last = performance.now(); raf = requestAnimationFrame(frame);
+  }
+  const kill = () => { dead = true; cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); };
+  output.addEventListener('webglcontextlost', e => {
+    e.preventDefault(); kill();
+    console.warn('[vajradhan] a cloth plate lost its context — showing the still');
+    if (onLost) onLost();
+  }, false);
+  const ro = new ResizeObserver(() => { syncSize(); upload(); start(); });
+  ro.observe(output);
+  const io = new IntersectionObserver(es => {
+    visible = es[es.length - 1] ? es[es.length - 1].isIntersecting : false;
+    if (visible) start();
+  });
+  io.observe(output);
+  wrapper.addEventListener('pointermove', e => {
+    const r = wrapper.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    if (touch.s < .01) { touch.x = x; touch.y = y; touch.vx = touch.vy = 0; }
+    ptr.x = x; ptr.y = y; ptr.inside = true; start();
+  }, { passive: true });
+  wrapper.addEventListener('pointerleave', () => { ptr.inside = false; }, { passive: true });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { run = false; cancelAnimationFrame(raf); } else start(); });
+  syncSize(); upload(); compose(Math.max(wrapper.clientWidth, 1), Math.max(wrapper.clientHeight, 1));
+  return { setEdge(v) { edgeTo = v; start(); } };
+}
+/* the plate: the still, cover-cropped, with the card's scrim baked in so it
+   ripples with the fabric instead of sitting flat on top of it */
+function clothPlate(img, w, h) {
+  const c = cvs(Math.max(1, w | 0), Math.max(1, h | 0)), x = c.getContext('2d');
+  const s = Math.max(c.width / img.width, c.height / img.height);
+  const dw = img.width * s, dh = img.height * s;
+  x.drawImage(img, (c.width - dw) / 2, (c.height - dh) / 2, dw, dh);
+  const g = x.createLinearGradient(0, 0, 0, c.height);
+  g.addColorStop(.4, 'rgba(6,8,12,.04)'); g.addColorStop(1, 'rgba(6,8,12,.78)');
+  x.fillStyle = g; x.fillRect(0, 0, c.width, c.height);
+  return c;
+}
+function buildCardCloth() {
+  if (COARSE || REDUCE) return;               /* nothing to brush it with / no motion */
+  const jobs = $$('.cards .card-fr').map(fr => {
+    const url = (getComputedStyle(fr).backgroundImage.match(/url\(["']?([^"')]+)/) || [])[1];
+    if (!url) return null;
+    return loadImage(url).then(img => {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      let plate = null, pw = 0, ph = 0;
+      const get = () => {
+        const w = Math.round(fr.clientWidth * dpr), h = Math.round(fr.clientHeight * dpr);
+        if (!plate || w !== pw || h !== ph) { plate = clothPlate(img, w, h); pw = w; ph = h; }
+        return plate;
+      };
+      const out = document.createElement('canvas');
+      out.className = 'cloth-out'; out.setAttribute('aria-hidden', 'true');
+      fr.insertBefore(out, fr.firstChild);
+      let inst = null;
+      try {
+        inst = createCloth(out, get, { wind: 3, speed: .5, amplitude: 30, drape: 40, brush: 2.05,
+          brushSize: 150, damping: 1, light: .5, sheen: .1, shadow: .25, cornerRadius: 6, perspective: 1200 },
+          () => { out.remove(); fr.classList.remove('on-cloth'); });
+      } catch (err) { out.remove(); throw err; }
+      if (!inst) { out.remove(); return; }
+      fr.classList.add('on-cloth');     /* only once the fabric really carries it */
+      const card = fr.closest('.card');
+      card.addEventListener('pointerenter', () => inst.setEdge(.185), { passive: true });
+      card.addEventListener('pointerleave', () => inst.setEdge(.048), { passive: true });
+    });
+  }).filter(Boolean);
+  return Promise.all(jobs);
+}
+
+/* ================================================== 7 · post-processing
+   Bloom (a threshold, a four-level blur pyramid, an additive recombine), then
+   one composite: faint chromatic fringe at the edges, the bloom, a cool lift
+   in the shadows, vignette, grain, and the opening fade.                  */
+const POST = { levels: [] };
+const QUAD_VS = 'varying vec2 vUv;\nvoid main(){ vUv = uv; gl_Position = vec4( position.xy, 0.0, 1.0 ); }';
+function initPost() {
+  if (!WANT_POST) return;
+  POST.cam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  POST.quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), null);
+  POST.quad.frustumCulled = false;
+  POST.qScene = new THREE.Scene(); POST.qScene.add(POST.quad);
+  const w = renderer.domElement.width, h = renderer.domElement.height;
+  const O = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, type: THREE.HalfFloatType,
+              depthBuffer: false, stencilBuffer: false };
+  POST.scene = new THREE.WebGLRenderTarget(w, h, Object.assign({}, O, { samples: PERF.msaa }));
+  let lw = Math.max(2, w >> 1), lh = Math.max(2, h >> 1);
+  for (let i = 0; i < 4; i++) {
+    POST.levels.push({ a: new THREE.WebGLRenderTarget(lw, lh, O), b: new THREE.WebGLRenderTarget(lw, lh, O), w: lw, h: lh });
+    lw = Math.max(2, lw >> 1); lh = Math.max(2, lh >> 1);
+  }
+  POST.up = new THREE.ShaderMaterial({
+    uniforms: { tS: { value: null }, uAmt: { value: 1 } }, vertexShader: QUAD_VS,
+    fragmentShader: 'uniform sampler2D tS; uniform float uAmt; varying vec2 vUv;\nvoid main(){ gl_FragColor = vec4(texture2D(tS,vUv).rgb*uAmt, 1.0); }',
+    blending: THREE.AdditiveBlending, transparent: true, depthTest: false, depthWrite: false
+  });
+  POST.bright = new THREE.ShaderMaterial({
+    uniforms: { tS: { value: null }, uThr: { value: .70 }, uKnee: { value: .28 } },
+    vertexShader: QUAD_VS,
+    fragmentShader:
+      'uniform sampler2D tS; uniform float uThr; uniform float uKnee; varying vec2 vUv;\n' +
+      'void main(){ vec3 c = texture2D(tS, vUv).rgb;\n' +
+      ' float l = dot(c, vec3(0.2126,0.7152,0.0722));\n' +
+      ' gl_FragColor = vec4(c * smoothstep(uThr, uThr+uKnee, l), 1.0); }'
+  });
+  POST.blur = new THREE.ShaderMaterial({
+    uniforms: { tS: { value: null }, uDir: { value: new THREE.Vector2(1, 0) } },
+    vertexShader: QUAD_VS,
+    fragmentShader:
+      'uniform sampler2D tS; uniform vec2 uDir; varying vec2 vUv;\n' +
+      'void main(){ vec3 c = texture2D(tS, vUv).rgb * 0.2270270270;\n' +
+      ' c += texture2D(tS, vUv + uDir*1.3846153846).rgb * 0.3162162162;\n' +
+      ' c += texture2D(tS, vUv - uDir*1.3846153846).rgb * 0.3162162162;\n' +
+      ' c += texture2D(tS, vUv + uDir*3.2307692308).rgb * 0.0702702703;\n' +
+      ' c += texture2D(tS, vUv - uDir*3.2307692308).rgb * 0.0702702703;\n' +
+      ' gl_FragColor = vec4(c, 1.0); }'
+  });
+  POST.comp = new THREE.ShaderMaterial({
+    uniforms: {
+      tS: { value: null }, tB: { value: null }, uRes: { value: new THREE.Vector2(w, h) },
+      uT: { value: 0 }, uBloom: { value: .42 }, uCA: { value: 1 }, uGrain: { value: .026 },
+      uVig: { value: .85 }, uFade: { value: 1 }, uLift: { value: 0 }
+    },
+    vertexShader: QUAD_VS,
+    fragmentShader:
+      'uniform sampler2D tS; uniform sampler2D tB; uniform vec2 uRes;\n' +
+      'uniform float uT, uBloom, uCA, uGrain, uVig, uFade, uLift;\n' +
+      'varying vec2 vUv;\n' +
+      'void main(){\n' +
+      ' vec2 d = vUv - 0.5; float r2 = dot(d,d);\n' +
+      ' float ca = uCA * (0.25 + r2*2.4) * 0.0012;\n' +
+      ' vec3 c;\n' +
+      ' c.r = texture2D(tS, vUv + d*ca).r;\n' +
+      ' c.g = texture2D(tS, vUv).g;\n' +
+      ' c.b = texture2D(tS, vUv - d*ca).b;\n' +
+      ' c += texture2D(tB, vUv).rgb * (uBloom + uLift*0.25);\n' +
+      ' float l = dot(c, vec3(0.2126,0.7152,0.0722));\n' +
+      ' c = mix(c, c*vec3(0.92,0.98,1.08), smoothstep(0.5,0.0,l)*0.5);\n' +   /* cold shadows */
+      ' float v = smoothstep(1.25, 0.28, length(d*vec2(1.0,0.94))*1.42);\n' +
+      ' c *= mix(1.0, v, uVig);\n' +
+      ' float g = fract(sin(dot(vUv*uRes + uT*137.0, vec2(12.9898,78.233)))*43758.5453);\n' +
+      ' c += (g-0.5)*uGrain;\n' +
+      ' c *= uFade;\n' +
+      ' gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);\n' +
+      '}'
+  });
+}
+function pass(mat, target, additive) {
+  POST.quad.material = mat;
+  renderer.setRenderTarget(target || null);
+  if (!additive) renderer.clear(true, false, false);
+  renderer.render(POST.qScene, POST.cam);
+}
+function renderPost() {
+  const L = POST.levels;
+  POST.bright.uniforms.tS.value = POST.scene.texture;
+  pass(POST.bright, L[0].a);
+  for (let i = 0; i < L.length; i++) {
+    if (i > 0) { POST.up.blending = THREE.NoBlending; POST.up.uniforms.uAmt.value = 1; POST.up.uniforms.tS.value = L[i - 1].a; pass(POST.up, L[i].a); }
+    POST.blur.uniforms.tS.value = L[i].a; POST.blur.uniforms.uDir.value.set(1 / L[i].w, 0); pass(POST.blur, L[i].b);
+    POST.blur.uniforms.tS.value = L[i].b; POST.blur.uniforms.uDir.value.set(0, 1 / L[i].h); pass(POST.blur, L[i].a);
+  }
+  POST.up.blending = THREE.AdditiveBlending; POST.up.uniforms.uAmt.value = .52;
+  for (let i = L.length - 1; i > 0; i--) { POST.up.uniforms.tS.value = L[i].a; pass(POST.up, L[i - 1].a, true); }
+  POST.comp.uniforms.tS.value = POST.scene.texture;
+  POST.comp.uniforms.tB.value = L[0].a;
+  pass(POST.comp, null);
+}
+function setSamples(n) {
+  PERF.msaa = n;
+  if (POST.scene && POST.scene.samples !== n) { POST.scene.samples = n; POST.scene.dispose(); }
+}
+
+/* ================================================= 8 · the camera rig
+   One waypoint per [data-cam] section. The opening one sits at the origin
+   looking straight down −z, which is the pose the planes are laid out for;
+   the rest walk into the range. The near ridge is passed around Work.    */
+const CAM = [
+  { p: [  0.00, 0.00,  0.0 ], t: [  0.00, 0.00, -10 ], fov: 36 },  /* 0 hero        */
+  { p: [ -0.35, 0.04, -1.5 ], t: [  0.50, 0.12, -11 ], fov: 35 },  /* 1 philosophy  */
+  { p: [  0.32,-0.04, -3.0 ], t: [ -0.30, 0.30, -11 ], fov: 34 },  /* 2 services    */
+  { p: [  0.15, 0.16, -4.6 ], t: [  0.55, 0.55, -12 ], fov: 34 },  /* 3 work        */
+  { p: [ -0.30, 0.28, -6.2 ], t: [  0.25, 0.80, -12.5 ], fov: 33 },/* 4 process     */
+  { p: [  0.00, 0.45, -8.0 ], t: [  0.00, 1.05, -16 ], fov: 34 },  /* 5 contact     */
+  { p: [  0.00, 0.40, -9.0 ], t: [  0.00, 0.70, -16 ], fov: 36 }   /* 6 footer      */
+];
+const RIG = { prog: 0, smooth: 0, mx: 0, my: 0, tmx: 0, tmy: 0, intro: 0, focus: -1, focusAmt: 0 };
+let curveP, curveT;
+function buildRig() {
+  curveP = new THREE.CatmullRomCurve3(CAM.map(c => new THREE.Vector3(c.p[0], c.p[1], c.p[2])), false, 'catmullrom', .42);
+  curveT = new THREE.CatmullRomCurve3(CAM.map(c => new THREE.Vector3(c.t[0], c.t[1], c.t[2])), false, 'catmullrom', .42);
+  tmpCam = new THREE.PerspectiveCamera(CAM[0].fov, vpW() / vpH(), .1, 400);
+}
+const _p = new THREE.Vector3(), _t = new THREE.Vector3();
+function applyCamera() {
+  const N = CAM.length - 1;
+  const u = clamp(RIG.smooth / N, 0, 1);
+  curveP.getPoint(u, _p); curveT.getPoint(u, _t);
+  const i = clamp(Math.floor(RIG.smooth), 0, N - 1), f = clamp(RIG.smooth - i, 0, 1);
+  let fov = lerp(CAM[i].fov, CAM[i + 1].fov, f);
+  /* the opening move: a longer lens settling in from a touch further back */
+  const io = 1 - RIG.intro;
+  _p.z += io * 1.6; _p.y += io * .12; fov += io * 5;
+  /* a focused discipline leans the lens in, barely */
+  fov -= RIG.focusAmt * .8;
+  /* hand-held drift toward the pointer; the near ridge moves most, the sky
+     not at all — which is the whole read of depth */
+  const par = REDUCE ? 0 : 1;
+  _p.x += RIG.mx * 0.24 * par; _p.y += RIG.my * 0.13 * par;
+  _t.x -= RIG.mx * 0.10 * par; _t.y -= RIG.my * 0.05 * par;
+  camera.position.copy(_p);
+  camera.lookAt(_t);
+  if (Math.abs(camera.fov - fov) > 1e-4) { camera.fov = fov; camera.updateProjectionMatrix(); }
+}
+
+/* ============================================== 9 · scroll ↔ sections */
+const SECS = $$('[data-cam]');
+let anchors = [], maxScroll = 1, activeSec = 0;
+function measure() {
+  maxScroll = Math.max(1, document.documentElement.scrollHeight - vpH());
+  anchors = SECS.map((el, i) => {
+    if (i === 0) return 0;
+    if (i === SECS.length - 1) return maxScroll;
+    return clamp(el.offsetTop + el.offsetHeight * .5 - vpH() * .5, 0, maxScroll);
+  });
+  for (let i = 1; i < anchors.length; i++) anchors[i] = Math.max(anchors[i], anchors[i - 1] + 1);
+}
+function progressFor(y) {
+  if (!anchors.length || y <= anchors[0]) return 0;
+  for (let i = 0; i < anchors.length - 1; i++)
+    if (y <= anchors[i + 1]) return i + (y - anchors[i]) / (anchors[i + 1] - anchors[i]);
+  return anchors.length - 1;
+}
+
+/* =================================================== 10 · page wiring */
+const nav = $('#nav'), preEl = $('#pre'), preFill = $('#pre-fill'), prePct = $('#pre-pct'), preStep = $('#pre-step');
+
+function wireReveals() {
+  splitHeadingWords();
+  const groups = new Map();
+  const items = $$('[data-rv], .mask-line');
+  items.forEach(el => {
+    const key = el.parentElement;
+    const arr = groups.get(key) || []; arr.push(el); groups.set(key, arr);
+  });
+  groups.forEach(arr => arr.forEach((el, i) => el.dataset.rvd = i * 85));
+  if (!('IntersectionObserver' in window)) { items.forEach(el => el.classList.add('rv-in')); return; }
+  const io = new IntersectionObserver(es => {
+    es.forEach(e => {
+      if (!e.isIntersecting) return;
+      io.unobserve(e.target);
+      const d = parseFloat(e.target.dataset.rvd || 0);
+      setTimeout(() => e.target.classList.add('rv-in'), REDUCE ? 0 : d);
+    });
+  }, { rootMargin: '0px 0px -10% 0px', threshold: .04 });
+  items.forEach(el => { if (!el.closest('#hero')) io.observe(el); });
+}
+
+/* Word-level masks so each display heading arrives at a reading pace. The
+   visual words are presentational (aria-hidden); the line keeps the whole
+   phrase as its aria-label, so a screen reader hears the sentence, once. */
+function splitHeadingWords() {
+  if (REDUCE) return;
+  $$('h1.display, h2.display').forEach(heading => {
+    if (heading.dataset.wordReady === 'true') return;
+    const lines = heading.querySelectorAll('.mask-line');
+    const targets = lines.length ? [].slice.call(lines) : [heading];
+    /* the heading (a role that takes a name) carries the readable sentence;
+       the word spans built below are presentational */
+    heading.setAttribute('aria-label', heading.textContent.replace(/\s+/g, ' ').trim());
+    heading.dataset.wordReady = 'true';
+    let n = 0;
+    targets.forEach(target => {
+      const phrase = target.textContent.replace(/\s+/g, ' ').trim();
+      if (!phrase) return;
+      target.classList.add('word-reveal');
+      target.textContent = '';
+      phrase.split(' ').forEach((word, i) => {
+        if (i) target.appendChild(document.createTextNode(' '));
+        const mask = document.createElement('span');
+        const inner = document.createElement('span');
+        mask.className = 'word-mask'; mask.setAttribute('aria-hidden', 'true');
+        inner.className = 'word'; inner.textContent = word;
+        inner.style.setProperty('--word-delay', (n++ * 72) + 'ms');
+        mask.appendChild(inner); target.appendChild(mask);
+      });
+    });
+  });
+}
+
+/* Kage's foreground stages: the chapter with the most of itself on screen owns
+   the fixed near plane; the previous one blurs out and goes home. */
+function wireForegroundStages() {
+  const pairs = $$('.sec .fg, .foot .fg').map(stage => ({ section: stage.closest('.sec, .foot'), stage }))
+    .filter(p => p.section);
+  if (!pairs.length || !('IntersectionObserver' in window)) return;
+  const sky = $('#fg-sky');
+  const ratios = new Map(pairs.map(p => [p.section, 0]));
+  const homes = new WeakMap(pairs.map(p => [p.stage, p.section]));
+  const timers = new WeakMap();
+  let activeStage = null;
+  const lift = stage => { if (stage.parentNode === sky) return; sky.appendChild(stage); void stage.offsetWidth; };
+  const park = stage => { const home = homes.get(stage); if (home && stage.parentNode !== home) home.insertBefore(stage, home.firstChild); };
+  const retire = stage => {
+    if (!stage || stage === activeStage) return;
+    clearTimeout(timers.get(stage));
+    stage.classList.remove('fg-active');
+    if (REDUCE) { park(stage); return; }
+    stage.classList.add('fg-retiring');
+    timers.set(stage, setTimeout(() => { stage.classList.remove('fg-retiring'); timers.delete(stage); park(stage); }, 820));
+  };
+  const activate = stage => {
+    if (!stage || stage === activeStage) return;
+    clearTimeout(timers.get(stage));
+    stage.classList.remove('fg-retiring');
+    lift(stage);
+    stage.classList.add('fg-active');
+    const prior = activeStage; activeStage = stage; retire(prior);
+  };
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => ratios.set(e.target, e.isIntersecting ? e.intersectionRatio : 0));
+    const next = pairs.reduce((best, p) => (ratios.get(p.section) || 0) > (ratios.get(best.section) || 0) ? p : best);
+    if ((ratios.get(next.section) || 0) > 0) activate(next.stage);
+    else if (activeStage) { const prior = activeStage; activeStage = null; retire(prior); }
+  }, { rootMargin: '-12% 0px -12% 0px', threshold: [0, .12, .32, .55] });
+  pairs.forEach(p => observer.observe(p.section));
+}
+
+/* Leaving the hero: the standfirst and the four disciplines stand down one at
+   a time, driven by the scroll itself; everything is handed back at zero. */
+function wireHeroExit() {
+  const seq = [
+    { el: $('.hero-sub'), at: .05, span: .35, shift: true },
+    ...$$('.chip').map((el, i) => ({ el: el, at: .15 + i * .09, span: .32, shift: true }))
+  ].filter(o => o.el);
+  let on = false;
+  const apply = () => {
+    const t = clamp(scrollY / Math.max(1, vpH() * .6), 0, 1);
+    if (t <= 0) {
+      if (!on) return;
+      seq.forEach(o => { o.el.style.opacity = ''; o.el.style.transform = ''; o.el.style.transition = ''; o.el.style.pointerEvents = ''; });
+      on = false; return;
+    }
+    on = true;
+    seq.forEach(o => {
+      o.el.style.transition = 'none';
+      const a = 1 - smooth(o.at, o.at + o.span, t);
+      o.el.style.opacity = a.toFixed(3);
+      if (o.shift) o.el.style.transform = 'translate3d(0,' + ((1 - a) * 15).toFixed(1) + 'px,0)';
+      o.el.style.pointerEvents = a < .05 ? 'none' : '';
+    });
+  };
+  addEventListener('scroll', apply, { passive: true });
+  addEventListener('resize', apply, { passive: true });
+  apply();
+}
+
+function wireNav() {
+  const rail = $('#rail'), burger = $('#burger'), menu = $('#menu'), scrim = $('#scrim');
+  const names = ['Visualizing the unimaginable', 'Philosophy', 'Services', 'Selected work', 'Process', 'Contact', 'Footer'];
+  SECS.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.innerHTML = '<i></i>'; b.title = names[i] || '';
+    b.setAttribute('aria-label', 'Go to ' + (names[i] || 'section'));
+    b.addEventListener('click', () => scrollTo({ top: anchors[i] || 0, behavior: REDUCE ? 'auto' : 'smooth' }));
+    rail.appendChild(b);
+  });
+  const dots = $$('#rail button');
+  const links = $$('.menu .mlink');
+  const setMenu = open => {
+    if (open) nav.classList.remove('hide');
+    menu.classList.toggle('open', open);
+    scrim.classList.toggle('open', open);
+    burger.setAttribute('aria-expanded', String(open));
+    burger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    document.documentElement.classList.toggle('nav-open', open);
+    if (open) setTimeout(() => { if (links[0]) links[0].focus({ preventScroll: true }); }, 60);
+  };
+  const isOpen = () => menu.classList.contains('open');
+  const closeMenu = (returnFocus) => {
+    if (!isOpen()) return;
+    setMenu(false);
+    if (returnFocus) burger.focus({ preventScroll: true });
+  };
+  burger.addEventListener('click', () => setMenu(!isOpen()));
+  scrim.addEventListener('click', () => closeMenu(true));
+  links.forEach(l => l.addEventListener('click', () => closeMenu(false)));
+  addEventListener('keydown', e => {
+    if (e.key === 'Escape' && isOpen()) { e.preventDefault(); closeMenu(true); return; }
+    /* keep Tab inside the open sheet (and the burger that closes it) */
+    if (e.key === 'Tab' && isOpen()) {
+      const ring = [burger].concat($$('#menu a'));
+      const i = ring.indexOf(document.activeElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); ring[ring.length - 1].focus(); }
+      else if (!e.shiftKey && i === ring.length - 1) { e.preventDefault(); ring[0].focus(); }
+    }
+  });
+  let last = 0;
+  const linkSec = links.map(l => SECS.indexOf(document.querySelector(l.getAttribute('href'))));
+  addEventListener('scroll', () => {
+    const y = scrollY;
+    nav.classList.toggle('stuck', y > 40);
+    nav.classList.toggle('hide', !isOpen() && y > last + 4 && y > vpH() * .8);
+    last = y;
+    rail.classList.toggle('show', y > vpH() * .5);
+    const a = Math.round(progressFor(y));
+    if (a !== activeSec) {
+      activeSec = a;
+      const cur = (el, on) => on ? el.setAttribute('aria-current', 'true') : el.removeAttribute('aria-current');
+      dots.forEach((d, i) => { d.classList.toggle('on', i === a); cur(d, i === a); });
+      links.forEach((l, i) => cur(l, linkSec[i] === a));
+    }
+  }, { passive: true });
+  $$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
+    const href = a.getAttribute('href');
+    const t = href === '#top' ? document.body : document.querySelector(href);
+    if (!t) return;
+    e.preventDefault();
+    scrollTo({ top: href === '#top' ? 0 : t.getBoundingClientRect().top + scrollY - 40, behavior: REDUCE ? 'auto' : 'smooth' });
+  }));
+}
+
+function wireFocus() {
+  const set = i => { RIG.focus = i; };
+  $$('[data-chip]').forEach(el => {
+    el.addEventListener('mouseenter', () => { set(+el.dataset.chip); $$('[data-chip]').forEach(o => o.classList.toggle('on', o === el)); });
+    el.addEventListener('mouseleave', () => { set(-1); el.classList.remove('on'); });
+  });
+  $$('[data-focus]').forEach(el => {
+    el.addEventListener('mouseenter', () => set(+el.dataset.focus));
+    el.addEventListener('mouseleave', () => set(-1));
+  });
+}
+
+function wireCursor() {
+  const dot = $('#cursor');
+  if (COARSE) { dot.style.display = 'none'; return; }
+  let x = vpW() / 2, y = vpH() / 2, tx2 = x, ty = y, lastT = '';
+  addEventListener('pointermove', e => {
+    tx2 = e.clientX; ty = e.clientY;
+    RIG.tmx = (e.clientX / vpW()) * 2 - 1;
+    RIG.tmy = -((e.clientY / vpH()) * 2 - 1);
+  }, { passive: true });
+  $$('[data-cursor]').forEach(el => {
+    el.addEventListener('mouseenter', () => dot.classList.add('act'));
+    el.addEventListener('mouseleave', () => dot.classList.remove('act'));
+  });
+  (function tick() {
+    x = lerp(x, tx2, .18); y = lerp(y, ty, .18);
+    /* write only when it moved: an idle pointer costs no style work */
+    const t = x.toFixed(1) + 'px ' + y.toFixed(1) + 'px';
+    if (t !== lastT) { dot.style.translate = t; lastT = t; }
+    requestAnimationFrame(tick);
+  })();
+}
+
+/* ==================================================== 11 · the machine */
+let tPrev = 0, clock = 0, fadeIn = 0, FRAME = 0;
+const INTRO = { t0: 0 };
+const fgSky = $('#fg-sky');
+
+function resize() {
+  if (!renderer || GL.lost) return;
+  const w = vpW(), h = vpH();
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, DPR_CAP) * PERF.scale);
+  renderer.setSize(w, h, true);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  const pw = renderer.domElement.width, ph = renderer.domElement.height;
+  if (POST.scene) {
+    POST.scene.setSize(pw, ph);
+    POST.comp.uniforms.uRes.value.set(pw, ph);
+    let lw = Math.max(2, pw >> 1), lh = Math.max(2, ph >> 1);
+    POST.levels.forEach(L => { L.a.setSize(lw, lh); L.b.setSize(lw, lh); L.w = lw; L.h = lh; lw = Math.max(2, lw >> 1); lh = Math.max(2, lh >> 1); });
+  }
+  if (WORLD.snow) WORLD.snow.material.uniforms.uSize.value = h * renderer.getPixelRatio();
+  if (WISP.mesh) WISP.mesh.material.uniforms.uPx.value = h * renderer.getPixelRatio();
+  layoutPlanes();
+  layoutWord();
+  measure();
+}
+
+/* Frame-time governor. Over budget: multisampling goes first, then
+   resolution in steps. Under budget for a while: resolution comes back first,
+   multisampling last, and only after a run of calm windows. */
+function govern(raw) {
+  if (PERF.locked || clock < 2.2) return;
+  PERF.acc += raw; PERF.n++;
+  if (PERF.n < 40 && PERF.acc < .9) return;
+  const avg = PERF.acc / PERF.n; PERF.acc = 0; PERF.n = 0;
+  if (avg > .0235) {
+    PERF.calm = 0;
+    if (PERF.msaa > 0) { setSamples(0); return; }
+    if (PERF.scale > .55) { PERF.scale = Math.max(.55, PERF.scale * (avg > .05 ? .66 : .86)); resize(); }
+  } else if (avg < .0135) {
+    PERF.calm++;
+    if (PERF.scale < 1) { PERF.scale = Math.min(1, PERF.scale + .08); resize(); }
+    else if (PERF.msaa === 0 && MSAA > 0 && PERF.calm > 6) setSamples(MSAA);
+  }
+}
+
+function updateWorld(dt) {
+  WORLD.uT.value = clock;
+  RIG.focusAmt = damp(RIG.focusAmt, RIG.focus >= 0 ? 1 : 0, 5, dt);
+  const f = RIG.focusAmt;
+  /* planes the camera closes on dissolve before it reaches them */
+  Object.keys(WORLD.planes).forEach(k => {
+    const P = WORLD.planes[k], n = P.def.near;
+    if (!n) return;
+    const dist = camera.position.z - P.mesh.position.z;
+    const a = smooth(n[0], n[1], dist);
+    P.mesh.material.uniforms.uOpacity.value = a;
+    P.mesh.visible = a > .004;
+  });
+  if (WORLD.planes.moon) WORLD.planes.moon.mesh.material.uniforms.uBright.value = 1.08 + f * .06;
+  /* the moon only breathes */
+  if (WORLD.halo) WORLD.halo.material.opacity = .30 + f * .12 + Math.sin(clock * .34) * .04;
+  if (WORLD.haze) WORLD.haze.forEach(h => {
+    const u = h.userData;
+    h.position.x = u.x0 + Math.sin(clock * u.sp + u.ph) * 3.2;
+    h.material.opacity = u.o * (1 + f * .5);
+    h.quaternion.copy(camera.quaternion);
+  });
+  /* the wordmark climbs as the walk arrives at Contact */
+  if (WORD.group) {
+    WORD.reveal = smooth(4.2, 5.0, RIG.smooth) * 1.25;
+    const leave = 1 - smooth(5.15, 5.8, RIG.smooth);     /* gone before the colophon */
+    WORD.glyphs.forEach((g, i) => {
+      const e = easeOut(clamp((WORD.reveal - i * .075) / .62, 0, 1));
+      g.position.y = g.userData.baseY - (1 - e) * (WORD.ink.asc * 1.1);
+      g.material.opacity = e * .78 * leave;
+      g.visible = g.material.opacity > .004;
+    });
+  }
+  if (POST.comp) POST.comp.uniforms.uLift.value = f;
+  updateWisps(dt);
+  /* the HTML near plane shares the drift: pointer, plus a little scroll lift */
+  if (!REDUCE && fgSky) {
+    /* only on change: every write restyles the whole stage */
+    const px = (-RIG.mx * 16).toFixed(2), py = (RIG.my * 8 + (RIG.prog % 1 - .5) * -10).toFixed(2);
+    if (px !== FG_DRIFT.px) { fgSky.style.setProperty('--px', px); FG_DRIFT.px = px; }
+    if (py !== FG_DRIFT.py) { fgSky.style.setProperty('--py', py); FG_DRIFT.py = py; }
+  }
+}
+
+const FG_DRIFT = { px: '', py: '' };
+function render() {
+  FRAME++;
+  renderer.setRenderTarget(POST.scene || null);
+  renderer.clear(true, true, false);
+  renderer.render(scene, camera);
+  renderer.setRenderTarget(null);
+  if (POST.scene) {
+    POST.comp.uniforms.uT.value = clock;
+    POST.comp.uniforms.uFade.value = fadeIn;
+    renderPost();
+  }
+}
+
+function frame(now) {
+  if (!running || FALLEN || GL.lost) return;
+  const raw = (now - tPrev) / 1000 || 0;
+  const dt = Math.min(raw, .05);              /* animation never jumps … */
+  tPrev = now; clock += dt;
+  fadeIn = INTRO.t0 ? sat((now - INTRO.t0) / 700) : 1;
+  govern(raw);                                /* … the governor reads the truth */
+  /* The rig follows the scroll on a looser clamp than the particles: on a
+     slow device a 50 ms cap would leave the camera trailing the page by
+     seconds, and damping is stable at any step. */
+  const rdt = Math.min(raw, .25);
+  RIG.prog = progressFor(scrollY);
+  RIG.smooth = REDUCE ? RIG.prog : damp(RIG.smooth, RIG.prog, 5.2, rdt);
+  RIG.mx = damp(RIG.mx, RIG.tmx, 2.6, rdt);
+  RIG.my = damp(RIG.my, RIG.tmy, 2.6, rdt);
+  if (INTRO.t0) RIG.intro = REDUCE ? 1 : sat((now - INTRO.t0) / 2400);
+  try {
+    applyCamera();
+    updateWorld(dt);
+    render();
+  } catch (err) {
+    /* a draw that throws (a tainted texture, a driver fault) must not leave a
+       frozen frame behind the page */
+    console.error('[vajradhan] render failed', err);
+    fallback(err); return;
+  }
+  queue();
+}
+const TIMER = qs('driver', 'raf') === 'timer';
+function queue() { TIMER ? setTimeout(() => frame(performance.now()), 16) : requestAnimationFrame(frame); }
+
+/* ======================================================== 12 · booting
+   Every step says whether the page can live without it. Critical steps —
+   the renderer, the planes, the post chain — send the page to fallback() if
+   they throw or reject; decorative ones log a warning and the boot carries
+   on without them. (Kage only guarded its first two steps, so a broken post
+   pipeline booted into a half-built scene.)                              */
+const JOBS = [
+  { name: 'Reading the type',      critical: false, run: () => document.fonts &&
+      Promise.all([document.fonts.load('500 200px Unbounded'), document.fonts.load('400 40px Onest')]) },
+  { name: 'Starting the renderer', critical: true,  run: () => { initGL(); buildRig(); } },
+  { name: 'Raising the range',     critical: true,  run: () => loadPlanes() },
+  { name: 'Hanging the moon',      critical: false, run: () => { buildMoonGlow(); buildStars(); } },
+  { name: 'Drawing in the mist',   critical: false, run: () => { buildHaze(); buildSnow(); buildWisps(); } },
+  { name: 'Cutting the word',      critical: false, run: () => buildWordmark() },
+  { name: 'Grading the frame',     critical: true,  run: () => initPost() },
+  { name: 'Hanging the plates',    critical: false, run: () => buildCardCloth() }
+];
+
+function boot() {
+  wireReveals(); wireForegroundStages(); wireNav(); wireHeroExit(); wireFocus(); wireCursor();
+  document.body.classList.add('is-locked');
+  let i = 0;
+  const step = () => {
+    if (FALLEN) return;
+    const j = JOBS[i];
+    preStep.textContent = j.name;
+    let settled = false;
+    const done = () => {
+      if (settled || FALLEN) return; settled = true;
+      i++;
+      const p = i / JOBS.length;
+      preFill.style.right = ((1 - p) * 100).toFixed(1) + '%';
+      prePct.textContent = Math.round(p * 100);
+      if (i < JOBS.length) setTimeout(step, 16); else setTimeout(start, 220);
+    };
+    const fail = err => {
+      if (settled || FALLEN) return;
+      if (j.critical) {
+        settled = true;
+        console.error('[vajradhan] critical step "' + j.name + '" failed — falling back', err);
+        fallback(err);
+      } else {
+        console.warn('[vajradhan] decorative step "' + j.name + '" failed — continuing without it', err);
+        done();
+      }
+    };
+    let r;
+    try { r = j.run(); } catch (err) { fail(err); return; }
+    (r && typeof r.then === 'function') ? r.then(done, fail) : done();
+  };
+  setTimeout(step, 60);
+}
+
+/* The page stays a page: scrolling unlocked, every reveal shown, the canvas
+   hidden, and the five photographic layers stacked in CSS in its place. */
+function fallback(err) {
+  if (FALLEN) return;
+  FALLEN = true; running = false;
+  clearTimeout(GL.timer);
+  document.documentElement.classList.add('no-webgl');
+  document.body.classList.add('no-webgl');
+  document.body.classList.remove('is-locked');
+  preEl.classList.add('done');
+  $$('[data-rv], .mask-line').forEach(e => e.classList.add('rv-in'));
+  window.__vajradhan = { fallback: true, error: String(err && err.message || err) };
+}
+
+function start() {
+  if (FALLEN) return;
+  BOOTED = true;
+  addEventListener('resize', resize, { passive: true });
+  addEventListener('orientationchange', () => setTimeout(resize, 250));
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) running = false;
+    else if (!running && !FALLEN && !GL.lost) { running = true; tPrev = performance.now(); queue(); }
+  });
+  resize();
+
+  const shot = Q.get('shot');
+  if (shot !== null) {                       /* deterministic states for review */
+    RIG.intro = 1; fadeIn = 1; INTRO.t0 = 0;
+    const n = clamp(parseInt(shot, 10) || 0, 0, SECS.length - 1);
+    scrollTo(0, anchors[n]);
+    RIG.smooth = RIG.prog = progressFor(anchors[n]);
+    $$('[data-rv], .mask-line').forEach(e => e.classList.add('rv-in'));
+    document.body.classList.remove('is-locked');
+    preEl.classList.add('done');
+  } else {
+    preEl.classList.add('done');
+    setTimeout(() => {
+      document.body.classList.remove('is-locked');
+      $('#hero').querySelectorAll('[data-rv], .mask-line').forEach((e, i) =>
+        setTimeout(() => e.classList.add('rv-in'), REDUCE ? 0 : 120 + i * 95));
+    }, REDUCE ? 0 : 340);
+  }
+  running = true; tPrev = performance.now();
+  INTRO.t0 = shot !== null ? 0 : performance.now();
+  queue();
+  window.__vajradhan = {
+    RIG: RIG, WORLD: WORLD, WORD: WORD, CAM: CAM, POST: POST, PERF: PERF, renderer: renderer, scene: scene, camera: camera,
+    anchors: () => anchors,
+    /* hand-testing: drop the context, and give it back after `ms` (omit ms to never restore) */
+    loseContext(ms) {
+      const ext = renderer.getContext().getExtension('WEBGL_lose_context');
+      if (!ext) return 'WEBGL_lose_context unavailable';
+      ext.loseContext();
+      if (ms !== undefined) setTimeout(() => ext.restoreContext(), ms);
+      return 'context lost' + (ms !== undefined ? ', restoring in ' + ms + 'ms' : ', not restoring');
+    }
+  };
+}
+
+if (document.readyState === 'loading') addEventListener('DOMContentLoaded', boot);
+else setTimeout(boot, 0);
+})();
+</script>
+</body>
+</html>
