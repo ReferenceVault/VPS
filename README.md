@@ -2,7 +2,7 @@
 
 Static website for **Vajradhan**, a creative technology and visual production studio: *Visualizing the unimaginable.*
 
-It is a single `index.html` that holds the markup, all the CSS and an inline Three.js scene. The hero photograph is cut into five depth planes (sky, moon, far range, mid range, near ridge). Scrolling moves the camera through them, with haze, stars, snow, a cursor trail, a light bloom/grain/vignette pass and word-by-word heading reveals. The site makes no network requests. Three.js and the fonts are both vendored.
+It is a single `index.html` that holds the markup, all the CSS and an inline Three.js scene. The hero plate is cut into five depth planes (sky and vortex, horizon haze, city, shore, road). Scrolling moves the camera through them, with haze, stars, snow, a cursor trail, a light bloom/grain/vignette pass and word-by-word heading reveals. The site makes no network requests. Three.js and the fonts are both vendored.
 
 ## Run it locally
 
@@ -49,10 +49,11 @@ Every path is relative, so the site works under the `/<repo>/` subpath. The `.no
 index.html              page, styles and the inline Three.js scene
 favicon.png
 assets/fonts.css        Onest + Unbounded, embedded as base64 woff2
-assets/img/             generated planes, stills, cut-outs and logo
+assets/img/             generated planes, cut-outs and logo
 vendor/three.min.js     Three.js r149 (MIT, see vendor/three.LICENSE)
 images/                 source images
-tools/build_assets.py   rebuilds everything in assets/ from images/
+tools/build_assets.py   rebuilds the logo and cut-outs in assets/ from images/
+tools/build_hero.py     cuts the hero plate into its five depth planes
 tools/fonts-src/        source woff2 files and their OFL licences
 ```
 
@@ -63,15 +64,14 @@ pip install pillow numpy
 python tools/build_assets.py
 ```
 
-The script:
-- paints the mock-up's baked-in type out of `images/vajradhan1.webp`
-- cuts the five depth planes along hand-traced silhouettes, filling the area behind each ridge so the parallax never shows a doubled edge
-- keys the logo off its studio background
-- grades the foreground cut-outs to moonlight
-- re-embeds the fonts
+`build_assets.py` keys the logo off its studio background, grades the foreground cut-outs to moonlight and re-embeds the fonts. Each step needs its own source under `images/`; a step whose source is missing is skipped with a note instead of failing the run.
 
-Generated images follow the project naming: `vajradhan1-*` (planes of photo 1), `vajradhan2–5` (work stills), `vajradhan6–9` (cut-outs), `vajradhan-logo`.
+**The logo and cut-out sources are not in the repository.** `images/logo.jpeg`, `tall-grass.webp`, `basalt-stones.webp`, `hill.webp` and `pine-tree.webp` were never committed, so `assets/img/vajradhan-logo.webp`, `vajradhan-logo-64.png`, `favicon.png` and `vajradhan6–9.webp` currently cannot be rebuilt — the committed files are the only copy. Put those sources back under `images/` and the steps run again.
+
+`build_hero.py` cuts `images/vajradhan11.png` into the five depth planes along hand-traced lines (skyline, horizon haze, city, road), filling the area behind each one so the parallax never shows a doubled edge. Pass `--png` to write transparent PNGs beside the webp plates.
+
+Generated images follow the project naming: `vajradhan11-*` (planes of the hero plate), `vajradhan6–9` (cut-outs), `vajradhan-logo`.
 
 ## Placeholder content
 
-Facts about the studio that weren't supplied are written as short placeholder copy and marked `<!-- TODO -->` in `index.html`: project names and credits, the contact email (currently `hello@example.com`), social links, studio location, one stat figure and the exact tool list. Search for `TODO` before launch.
+Facts about the studio that weren't supplied are written as short placeholder copy and marked `<!-- TODO -->` in `index.html`: the contact email (currently `hello@example.com`), social links, studio location, one stat figure and the exact tool list. Search for `TODO` before launch.
