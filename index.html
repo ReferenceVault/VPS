@@ -1761,7 +1761,9 @@ function wireFocus() {
    The clock only runs while the panel is on screen (an IntersectionObserver
    starts and stops it) and while the tab is visible. Under a pointer it
    slows, which is the only thing the cursor does to time.                */
-const STORY_HOLD = 3.0, STORY_FADE = 1.5;     /* seconds */
+/* Ten times the old pace: the stills read as footage rather than as a
+   slideshow. One frame every 0.45s, so the sixteen run in about 7s. */
+const STORY_HOLD = 0.30, STORY_FADE = 0.15;   /* seconds */
 const STORY_CYCLE = STORY_HOLD + STORY_FADE;
 const STORY = { el: null, plate: null, frames: [], n: 0, t: 0, raf: 0, tPrev: 0,
                 near: false, cur: -1, rate: 1, last: [], ready: null };
@@ -1775,15 +1777,17 @@ function storyReady(k) {
   if (img.decode) img.decode().catch(() => {});
 }
 
-/* Each still drifts while it shows — a per-frame scale and pan of a couple of
-   percent, alternating direction, so a held frame never sits dead still. */
-function storyDrift(k, phase) {
+/* Each still drifts while it shows, so a held frame never sits dead still.
+   The rates are per second, not per frame: change the hold and the drift
+   keeps the same speed on screen instead of turning into a jitter. */
+const STORY_ZOOM = .012, STORY_PAN = .55;     /* scale and per-cent, per second */
+function storyDrift(k, secs) {
   const img = STORY.frames[k];
   if (!img || REDUCE) return;
   const dir = k % 2 ? -1 : 1;
-  const sc = (1 + .022 * phase).toFixed(4);
-  const x = (dir * 1.1 * phase).toFixed(3);
-  const y = (dir * -.7 * phase).toFixed(3);
+  const sc = (1 + STORY_ZOOM * secs).toFixed(4);
+  const x = (dir * STORY_PAN * secs).toFixed(3);
+  const y = (dir * -.62 * STORY_PAN * secs).toFixed(3);
   img.style.transform = 'scale(' + sc + ') translate3d(' + x + '%,' + y + '%,0)';
 }
 
@@ -1800,9 +1804,9 @@ function storyApply() {
     const r = Math.round(o * 1000) / 1000;
     if (r !== STORY.last[k]) { STORY.frames[k].style.opacity = r; STORY.last[k] = r; }
   }
-  /* the outgoing frame is late in its own drift, the incoming one just starting */
-  storyDrift(i, local / (STORY_CYCLE * 1.35));
-  if (f > 0) storyDrift(nxt, Math.max(0, local - STORY_HOLD) / (STORY_CYCLE * 1.35) * .35);
+  /* the outgoing still is late in its own drift, the incoming one just starting */
+  storyDrift(i, local);
+  if (f > 0) storyDrift(nxt, Math.max(0, local - STORY_HOLD) * .4);
   if (i !== STORY.cur) {
     if (STORY.cur >= 0) STORY.frames[STORY.cur].style.willChange = '';
     STORY.frames[i].style.willChange = 'opacity, transform';
