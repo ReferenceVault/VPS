@@ -68,7 +68,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;paddin
    cut-out planes — clips its own x axis. `clip` (unlike
    `hidden`) makes no scroll container, so vertical bleed and sticky
    behaviour survive and nothing has to measure the viewport by hand. */
-.hero, .sec, .foot{ overflow-x:clip; overflow-y:visible; }
+.hero, .sec, .seq, .foot{ overflow-x:clip; overflow-y:visible; }
 /* The last stage's cut-outs hang below the footer by design; at the end of the
    page that overhang is scrollable nothing, so the parked stage clips it. The
    footer itself must not clip, or its blend gradient (which reaches 38% above
@@ -215,6 +215,20 @@ html.nav-open .nav{ transform:none; transition:none; }
 .chip:hover .num, .chip.on .num{ color:var(--ember); transform:translate3d(0,-2px,0); }
 .chip:hover b, .chip.on b{ color:#fff; }
 .chip:hover .d{ color:var(--bone-dim); }
+
+/* ================================================== the sequence section
+   The scroll length is the section's height; the frame inside it is pinned
+   with sticky, so the scene holds still while the page moves through it.
+   Nothing here paints the scene itself — that is the canvas, behind .page. */
+.seq{ position:relative; height:520vh; }
+.seq-pin{
+  position:sticky; top:0; height:100svh;
+  display:flex; align-items:flex-end; padding:0 var(--pad) clamp(42px,9vh,110px);
+}
+.seq-copy{ max-width:min(540px,54%); }
+.seq-copy .eyebrow{ display:block; margin-bottom:18px; }
+.seq-copy h2{ margin-bottom:18px; max-width:15ch; }
+.seq-copy p{ margin:0; max-width:42ch; }
 
 /* ============================================================= sections */
 .sec{ position:relative; padding:clamp(96px,16vh,200px) var(--pad); }
@@ -434,6 +448,7 @@ html.nav-open .nav{ transform:none; transition:none; }
 }
 @media (max-width:820px){
   :root{ --nav-h:72px; }
+  .seq-copy{ max-width:none; }
   .hero-copy{ max-width:none; }
   .rail{ display:none; }
   .chip .d{ display:block;  font-size:12px; }
@@ -533,8 +548,22 @@ html.nav-open .nav{ transform:none; transition:none; }
   </div>
 </section>
 
+<!-- ============================================================ sequence
+     A tall scroll container with a pinned frame. The scene inside it is drawn
+     by the page's own renderer into the same post chain; the page contributes
+     only this scroll length and the copy laid over it. -->
+<section class="seq" id="sequence" data-cam="1" aria-labelledby="seq-title">
+  <div class="seq-pin">
+    <div class="seq-copy">
+      <div class="eyebrow" data-rv="fade">The sequence</div>
+      <h2 class="display h-sec" id="seq-title" data-rv="up">A field of light, gathered into a figure.</h2>
+      <p class="body-lg" data-rv="up">Scroll to carry the crystals through it. Every beat answers to the page, forward and back.</p>
+    </div>
+  </div>
+</section>
+
 <!-- ============================================================ philosophy -->
-<section class="sec" id="about" data-cam="1" aria-labelledby="about-title">
+<section class="sec" id="about" data-cam="2" aria-labelledby="about-title">
   <div class="fg" data-fg="about" aria-hidden="true">
     <span class="fg-el fg-hill" data-fg-in="up">
       <img src="assets/img/vajradhan8.webp" alt="" width="1400" height="700" loading="lazy" decoding="async">
@@ -569,7 +598,7 @@ html.nav-open .nav{ transform:none; transition:none; }
 </section>
 
 <!-- ============================================================ services -->
-<section class="sec" id="services" data-cam="2" aria-labelledby="services-title">
+<section class="sec" id="services" data-cam="3" aria-labelledby="services-title">
   <div class="fg" data-fg="services" aria-hidden="true">
     <span class="fg-el fg-stones" data-fg-in="right">
       <img src="assets/img/vajradhan7.webp" alt="" width="1400" height="908" loading="lazy" decoding="async">
@@ -621,7 +650,7 @@ html.nav-open .nav{ transform:none; transition:none; }
 </section>
 
 <!-- ============================================================ process -->
-<section class="sec" id="process" data-cam="3" aria-labelledby="process-title">
+<section class="sec" id="process" data-cam="4" aria-labelledby="process-title">
   <div class="fg" data-fg="process" aria-hidden="true">
     <span class="fg-el fg-hill fg-el--flip" data-fg-in="up">
       <img src="assets/img/vajradhan8.webp" alt="" width="1400" height="700" loading="lazy" decoding="async">
@@ -653,7 +682,7 @@ html.nav-open .nav{ transform:none; transition:none; }
 </section>
 
 <!-- ============================================================ contact -->
-<section class="sec fin" id="contact" data-cam="4" aria-labelledby="contact-title">
+<section class="sec fin" id="contact" data-cam="5" aria-labelledby="contact-title">
   <div class="fg" data-fg="contact" aria-hidden="true">
     <span class="fg-el fg-pine fg-el--flip" data-fg-in="left">
       <img src="assets/img/vajradhan9.webp" alt="" width="997" height="1400" loading="lazy" decoding="async">
@@ -675,7 +704,7 @@ html.nav-open .nav{ transform:none; transition:none; }
 </section>
 
 <!-- ============================================================ footer -->
-<footer class="foot" data-cam="5">
+<footer class="foot" data-cam="6">
   <div class="fg" data-fg="foot" aria-hidden="true">
     <span class="fg-el fg-stones" data-fg-in="up">
       <img src="assets/img/vajradhan7.webp" alt="" width="1400" height="908" loading="lazy" decoding="async">
@@ -1263,6 +1292,194 @@ function layoutWord() {
   WORD.group.rotation.set(Math.atan2(c.t[1] - c.p[1], c.p[2] - c.t[2]), 0, 0);
 }
 
+/* ================================================ 6 · the scroll sequence
+   The client's reference is a ten-second film; this is the same journey with
+   the page's scroll as its clock. One THREE.Points field of faceted crystals
+   lives in its own scene, drawn by the same renderer into the same post chain
+   as everything else, so the bloom, grain and vignette are the ones the rest
+   of the site already uses.
+
+   The movement is entirely in the vertex shader: each stone carries a seed
+   and finds its place from that seed, the clock and the progress uniform.
+   Nothing walks the 50,000 positions on the CPU, and no GPGPU target is
+   needed while the flow stays analytic.
+
+   Beats, by progress:  0.00-0.18  the drifting field   (this stage)
+                        0.18-0.42  the inward spiral    (stage 2)
+                        0.42-0.62  the figure gathers   (stage 3)
+                        0.62-0.80  rings and the eye    (stage 4)
+                        0.80-1.00  the beams            (stage 5)             */
+const SEQ_N = LOW ? 10000 : (COARSE ? 20000 : 50000);
+const SEQ_FOV = 42, SEQ_NEAR_Z = 4, SEQ_FAR_Z = 98, SEQ_FOCAL = 16;
+const SEQ_FORCE = qs('seq', null);        /* ?seq=0.35 parks the sequence for review */
+const SEQ = { scene: null, cam: null, ortho: null, pts: null, curtain: null, curtainScene: null,
+              prog: 0, target: 0, fade: 0, top: 0, len: 1, on: false, el: null };
+
+const SEQ_VS = [
+  'attribute float aSeed; attribute float aSize;',
+  'uniform float uT, uPx, uProj, uFocal, uProg;',
+  'varying float vFocus; varying float vSeed; varying float vA;',
+  'void main(){',
+  '  vec3 p = position;',
+  '  float s = aSeed * 6.2831853;',
+  '  float t = uT * 0.11;',
+  /* Three shifted sines an axis: bounded, so the slab never empties and no
+     wrap seam can appear. Deeper stones swing wider, which reads as the same
+     angular drift at every depth. */
+  '  float d = 0.04 * (-p.z);',
+  '  p.x += (sin(t * 0.70 + s) + sin(t * 0.23 + p.z * 0.06)) * d;',
+  '  p.y += (cos(t * 0.61 + s * 1.3) + sin(t * 0.17 + p.x * 0.05)) * d * 0.8;',
+  '  p.z += sin(t * 0.50 + s * 0.7) * d * 0.7;',
+  /* the whole field turns, very slowly, about the axis the vortex will use */
+  '  float a = uT * 0.012;',
+  '  p.xy = mat2(cos(a), -sin(a), sin(a), cos(a)) * p.xy;',
+  '  vec4 mv = modelViewMatrix * vec4(p, 1.0);',
+  '  float dist = max(0.6, -mv.z);',
+  /* depth of field, faked: distance from the focal plane widens the stone and
+     dissolves its facets (see the fragment shader) */
+  '  vFocus = clamp(abs(dist - uFocal) / uFocal, 0.0, 1.0);',
+  '  vSeed = aSeed;',
+  '  float size = aSize * uProj / dist;',
+  '  size *= 1.0 + vFocus * vFocus * 2.6;',
+  '  gl_PointSize = clamp(size * uPx, 1.0, 190.0);',
+  /* near stones are huge and faint, far ones small and sharp; everything
+     fades out in the last few units so nothing pops at the near plane */
+  /* brightness is rare: cubed seed leaves a few stones catching the light
+     and the rest as faint grain, which is what keeps black space black */
+  '  float bright = 0.06 + 0.94 * aSeed * aSeed * aSeed;',
+  '  vA = bright * smoothstep(1.0, 5.5, dist) * (1.0 - 0.46 * vFocus);',
+  '  gl_Position = projectionMatrix * mv;',
+  '}'].join('\n');
+
+const SEQ_FS = [
+  'uniform sampler2D uTex; uniform float uOpacity; uniform vec3 uTint;',
+  'varying float vFocus; varying float vSeed; varying float vA;',
+  'void main(){',
+  '  vec2 uv = gl_PointCoord - 0.5;',
+  /* each stone sits at its own angle, or 50,000 copies of one sprite read as
+     a stamp rather than as a field */
+  '  float a = vSeed * 6.2831853;',
+  '  float c = cos(a), sn = sin(a);',
+  '  uv = mat2(c, -sn, sn, c) * uv;',
+  '  vec4 t = texture2D(uTex, uv + 0.5);',
+  /* out of focus, a cut stone is only a disc of light */
+  '  float r = length(gl_PointCoord - 0.5) * 2.0;',
+  '  float blob = smoothstep(1.0, 0.0, r); blob *= blob;',
+  '  float k = smoothstep(0.12, 0.80, vFocus);',
+  '  float al = mix(t.a, blob * 0.72, k) * vA * uOpacity;',
+  '  if (al <= 0.002) discard;',
+  '  vec3 col = mix(t.rgb, vec3(1.0), k * 0.55) * uTint;',
+  '  gl_FragColor = vec4(col * al, al);',
+  '}'].join('\n');
+
+function buildSeq() {
+  SEQ.el = $('#sequence');
+  if (!SEQ.el) return;
+  return loadImage('assets/img/seq-gem.png').then(img => {
+    const N = SEQ_N, rnd = mulberry32(5150);
+    const pos = new Float32Array(N * 3), seed = new Float32Array(N), size = new Float32Array(N);
+    const tan = Math.tan(SEQ_FOV * Math.PI / 360);
+    for (let i = 0; i < N; i++) {
+      /* Most stones sit deep, but a quarter of them are pulled into the near
+         half: those are the big soft ones the reference opens on, and without
+         them the field reads as a starfield rather than as a depth. */
+      const u = rnd();
+      const near = rnd() < .13;
+      const dist = near ? SEQ_NEAR_Z + (SEQ_FOCAL - SEQ_NEAR_Z) * (u * .9 + .05)
+                        : SEQ_NEAR_Z + (SEQ_FAR_Z - SEQ_NEAR_Z) * Math.pow(u, 1.25);
+      const hh = tan * dist * 1.18, hw = hh * 1.9;
+      pos[i * 3]     = (rnd() * 2 - 1) * hw;
+      pos[i * 3 + 1] = (rnd() * 2 - 1) * hh;
+      pos[i * 3 + 2] = -dist;
+      seed[i] = rnd();
+      const g = rnd();
+      size[i] = .010 + g * g * .20;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geo.setAttribute('aSeed', new THREE.BufferAttribute(seed, 1));
+    geo.setAttribute('aSize', new THREE.BufferAttribute(size, 1));
+    geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(0, 0, -30), 260);
+
+    const tex = tx(img, { aniso: 2 });
+    tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = true;
+    const mat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTex: { value: tex }, uT: { value: 0 }, uPx: { value: 1 }, uProj: { value: 600 },
+        uFocal: { value: SEQ_FOCAL }, uProg: { value: 0 }, uOpacity: { value: 0 },
+        uTint: { value: new THREE.Color(0xdfe9f2) }
+      },
+      vertexShader: SEQ_VS, fragmentShader: SEQ_FS,
+      transparent: true, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false
+    });
+    SEQ.scene = new THREE.Scene();
+    SEQ.cam = new THREE.PerspectiveCamera(SEQ_FOV, vpW() / vpH(), .5, 400);
+    SEQ.ortho = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    SEQ.pts = new THREE.Points(geo, mat);
+    SEQ.pts.frustumCulled = false;
+    SEQ.scene.add(SEQ.pts);
+
+    /* The world behind goes out under a curtain rather than by dimming each
+       material in turn: one quad takes the planes, the stars, the haze and
+       the wordmark together, and leaves the reference's black behind the
+       crystals. */
+    SEQ.curtain = new THREE.Mesh(new THREE.PlaneGeometry(2, 2),
+      new THREE.MeshBasicMaterial({ color: 0x03040a, transparent: true, opacity: 0,
+        depthTest: false, depthWrite: false }));
+    SEQ.curtain.frustumCulled = false;
+    SEQ.curtainScene = new THREE.Scene();
+    SEQ.curtainScene.add(SEQ.curtain);
+    seqResize();
+    seqMeasure();
+  });
+}
+
+function seqMeasure() {
+  if (!SEQ.el) return;
+  SEQ.top = SEQ.el.getBoundingClientRect().top + scrollY;
+  SEQ.len = Math.max(1, SEQ.el.offsetHeight - vpH());
+}
+
+function seqResize() {
+  if (!SEQ.pts) return;
+  SEQ.cam.aspect = vpW() / vpH();
+  SEQ.cam.updateProjectionMatrix();
+  /* world units to device pixels at one unit of depth, so a stone keeps its
+     size through every resolution the governor picks */
+  SEQ.pts.material.uniforms.uProj.value =
+    renderer.domElement.height / (2 * Math.tan(SEQ_FOV * Math.PI / 360));
+  SEQ.pts.material.uniforms.uPx.value = 1;
+}
+
+/* Scroll in, progress out. The page owns the scrolling; this only reads it. */
+function seqUpdate(dt) {
+  if (!SEQ.pts) return;
+  const vh = vpH();
+  SEQ.target = SEQ_FORCE !== null ? clamp(parseFloat(SEQ_FORCE) || 0, 0, 1)
+                                  : sat((scrollY - SEQ.top) / SEQ.len);
+  /* eased, never snapped, so the beats read as motion rather than scrubbing */
+  SEQ.prog = (REDUCE || SEQ_FORCE !== null) ? SEQ.target : damp(SEQ.prog, SEQ.target, 4.0, dt);
+  const enter = sat((scrollY - (SEQ.top - vh * .85)) / (vh * .85));
+  const leave = sat((scrollY - (SEQ.top + SEQ.len)) / (vh * .65));
+  SEQ.fade = SEQ_FORCE !== null ? 1 : enter * (1 - leave);
+  SEQ.on = SEQ.fade > .002;
+  const u = SEQ.pts.material.uniforms;
+  u.uT.value = REDUCE ? 0 : clock;
+  u.uProg.value = SEQ.prog;
+  u.uOpacity.value = SEQ.fade;
+  SEQ.curtain.material.opacity = SEQ.fade;
+}
+
+function seqRender() {
+  if (!SEQ.on) return;
+  renderer.autoClear = false;
+  renderer.render(SEQ.curtainScene, SEQ.ortho);
+  renderer.render(SEQ.scene, SEQ.cam);
+  renderer.autoClear = true;
+}
+
 /* ================================================== 7 · post-processing
    Bloom (a threshold, a four-level blur pyramid, an additive recombine), then
    one composite: faint chromatic fringe at the edges, the bloom, a cool lift
@@ -1372,11 +1589,12 @@ function setSamples(n) {
    the rest walk into the range. The near ridge is passed on the way down. */
 const CAM = [
   { p: [  0.00, 0.00,  0.0 ], t: [  0.00, 0.00, -10 ], fov: 36 },  /* 0 hero        */
-  { p: [ -0.35, 0.04, -1.5 ], t: [  0.50, 0.12, -11 ], fov: 35 },  /* 1 philosophy  */
-  { p: [  0.32,-0.04, -3.0 ], t: [ -0.30, 0.30, -11 ], fov: 34 },  /* 2 services    */
-  { p: [ -0.30, 0.28, -6.2 ], t: [  0.25, 0.80, -12.5 ], fov: 33 },/* 3 process     */
-  { p: [  0.00, 0.45, -8.0 ], t: [  0.00, 1.05, -16 ], fov: 34 },  /* 4 contact     */
-  { p: [  0.00, 0.40, -9.0 ], t: [  0.00, 0.70, -16 ], fov: 36 }   /* 5 footer      */
+  { p: [ -0.05, 0.02, -0.7 ], t: [  0.10, 0.06, -10.6 ], fov: 36 },/* 1 sequence    */
+  { p: [ -0.35, 0.04, -1.5 ], t: [  0.50, 0.12, -11 ], fov: 35 },  /* 2 philosophy  */
+  { p: [  0.32,-0.04, -3.0 ], t: [ -0.30, 0.30, -11 ], fov: 34 },  /* 3 services    */
+  { p: [ -0.30, 0.28, -6.2 ], t: [  0.25, 0.80, -12.5 ], fov: 33 },/* 4 process     */
+  { p: [  0.00, 0.45, -8.0 ], t: [  0.00, 1.05, -16 ], fov: 34 },  /* 5 contact     */
+  { p: [  0.00, 0.40, -9.0 ], t: [  0.00, 0.70, -16 ], fov: 36 }   /* 6 footer      */
 ];
 const RIG = { prog: 0, smooth: 0, mx: 0, my: 0, tmx: 0, tmy: 0, intro: 0, focus: -1, focusAmt: 0 };
 let curveP, curveT;
@@ -1418,6 +1636,7 @@ function measure() {
     return clamp(el.offsetTop + el.offsetHeight * .5 - vpH() * .5, 0, maxScroll);
   });
   for (let i = 1; i < anchors.length; i++) anchors[i] = Math.max(anchors[i], anchors[i - 1] + 1);
+  seqMeasure();
 }
 function progressFor(y) {
   if (!anchors.length || y <= anchors[0]) return 0;
@@ -1550,7 +1769,7 @@ function wireHeroExit() {
 
 function wireNav() {
   const rail = $('#rail'), burger = $('#burger'), menu = $('#menu'), scrim = $('#scrim');
-  const names = ['Top', 'Philosophy', 'Services', 'Process', 'Contact', 'Footer'];
+  const names = ['Top', 'The sequence', 'Philosophy', 'Services', 'Process', 'Contact', 'Footer'];
   SECS.forEach((s, i) => {
     const b = document.createElement('button');
     b.type = 'button'; b.innerHTML = '<i></i>'; b.title = names[i] || '';
@@ -1669,6 +1888,7 @@ function resize() {
   if (WISP.mesh) WISP.mesh.material.uniforms.uPx.value = h * renderer.getPixelRatio();
   layoutPlanes();
   layoutWord();
+  seqResize();
   measure();
 }
 
@@ -1741,6 +1961,7 @@ function render() {
   renderer.setRenderTarget(POST.scene || null);
   renderer.clear(true, true, false);
   renderer.render(scene, camera);
+  seqRender();
   renderer.setRenderTarget(null);
   if (POST.scene) {
     POST.comp.uniforms.uT.value = clock;
@@ -1768,6 +1989,7 @@ function frame(now) {
   try {
     applyCamera();
     updateWorld(dt);
+    seqUpdate(dt);
     render();
   } catch (err) {
     /* a draw that throws (a tainted texture, a driver fault) must not leave a
@@ -1794,7 +2016,8 @@ const JOBS = [
   { name: 'Hanging the moon',      critical: false, run: () => { buildMoonGlow(); buildStars(); } },
   { name: 'Drawing in the mist',   critical: false, run: () => { buildHaze(); buildSnow(); buildWisps(); } },
   { name: 'Cutting the word',      critical: false, run: () => buildWordmark() },
-  { name: 'Grading the frame',     critical: true,  run: () => initPost() }
+  { name: 'Grading the frame',     critical: true,  run: () => initPost() },
+  { name: 'Cutting the crystals',  critical: false, run: () => buildSeq() }
 ];
 
 function boot() {
@@ -1878,7 +2101,7 @@ function start() {
   INTRO.t0 = shot !== null ? 0 : performance.now();
   queue();
   window.__vajradhan = {
-    RIG: RIG, WORLD: WORLD, WORD: WORD, CAM: CAM, POST: POST, PERF: PERF, renderer: renderer, scene: scene, camera: camera,
+    RIG: RIG, WORLD: WORLD, WORD: WORD, CAM: CAM, POST: POST, PERF: PERF, SEQ: SEQ, renderer: renderer, scene: scene, camera: camera,
     anchors: () => anchors,
     /* hand-testing: drop the context, and give it back after `ms` (omit ms to never restore) */
     loseContext(ms) {
