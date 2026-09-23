@@ -346,17 +346,28 @@ html.nav-open .nav{ transform:none; transition:none; }
    The 16:9 box is declared, so the card holds its place before a single
    still has loaded. Inside it the plate is overscanned a touch, so the hover
    tilt can never swing a corner in off the picture. */
-.seq{ perspective:1400px; }
+.seq{ perspective:1200px; padding-block:clamp(120px,20vh,260px); }
+/* Two thirds of the column, centred: a framed piece with the page around it.
+   The corner, the hairline, the scrim and the timings are the ones the old
+   work cards had (the 6px came from their cloth shader's cornerRadius). */
 .seq-card{
-  position:relative; aspect-ratio:16/9; overflow:hidden; isolation:isolate;
+  position:relative; width:66%; margin-inline:auto;
+  aspect-ratio:16/9; overflow:hidden; isolation:isolate; border-radius:6px;
   background:var(--ink-2);
   outline:1px solid var(--line-soft); outline-offset:-1px;
-  transition:outline-color .55s var(--ease);
+  transition:outline-color .5s var(--ease);
+}
+/* the old cards' scrim: it sat under their labels, and it still gives the
+   frame its weight at the bottom edge */
+.seq-card::after{
+  content:''; position:absolute; inset:0; z-index:3; pointer-events:none;
+  border-radius:inherit;
+  background:linear-gradient(180deg, rgba(6,8,12,.04) 40%, rgba(6,8,12,.78));
 }
 .seq-plate{
   position:absolute; inset:0;
   transform:rotateX(var(--ry,0deg)) rotateY(var(--rx,0deg)) scale(var(--sc,1.04));
-  transition:transform .55s var(--ease-out), filter .55s var(--ease);
+  transition:transform .5s var(--ease-out), filter .5s var(--ease);
   will-change:transform;
 }
 .seq-fr{
@@ -365,20 +376,27 @@ html.nav-open .nav{ transform:none; transition:none; }
   opacity:0;
 }
 .seq-fr.is-on{ opacity:1; }          /* what shows if the script never runs */
-/* the edge lift: an inset hairline and a soft bloom, opacity only */
+/* The lights in the old stills breathed on two tracks whose periods do not
+   divide, so the loop never came round inside a look. The same pair of
+   periods and the same curve now drive this card's bloom, which is the one
+   piece of that treatment a moving sequence can still carry. */
 .seq-edge{
   position:absolute; inset:0; z-index:2; pointer-events:none; opacity:0;
-  box-shadow:inset 0 0 0 1px rgba(228,235,240,.30), 0 0 60px rgba(212,41,155,.10);
-  transition:opacity .55s var(--ease);
+  border-radius:inherit;
+  box-shadow:inset 0 0 0 1px rgba(214,228,255,.30), 0 0 60px rgba(120,150,205,.18);
+  transition:opacity .5s var(--ease);
 }
+@keyframes seq-breathe{ from{ opacity:.72; } 50%{ opacity:1; } to{ opacity:.72; } }
 @media (hover:hover) and (pointer:fine){
-  .seq-card:hover{ outline-color:rgba(228,235,240,.22); }
+  .seq-card:hover{ outline-color:rgba(228,235,240,.3); }
   .seq-card:hover .seq-plate{ --sc:1.075; filter:brightness(1.06); }
-  .seq-card:hover .seq-edge{ opacity:1; }
+  .seq-card:hover .seq-edge{ opacity:1; animation:seq-breathe 6.1s var(--ease-io) infinite; }
 }
 /* touch: a press stands in for the hover, and is released on every exit */
 .seq-card.is-press .seq-plate{ --sc:1.01; filter:brightness(1.04); }
 .seq-card.is-press .seq-edge{ opacity:1; }
+@media (max-width:1080px){ .seq-card{ width:76%; } }
+@media (max-width:820px){ .seq-card{ width:88%; } }
 
 /* ============================================================= progress rail */
 .rail{ position:fixed; right:calc(var(--pad) - 6px); top:50%; transform:translateY(-50%); z-index:45;
@@ -509,6 +527,7 @@ html.nav-open .nav{ transform:none; transition:none; }
   *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
   .seq-plate{ transform:none !important; }
   .seq-fr{ transform:none !important; }
+  .seq-edge{ animation:none !important; }
   [data-rv]{ opacity:1 !important; transform:none !important; }
   .word{ opacity:1 !important; transform:none !important; }
   .fg-el--sway > img{ animation:none !important; }
