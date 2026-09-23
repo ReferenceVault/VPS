@@ -64,9 +64,11 @@ pip install pillow numpy
 python tools/build_assets.py
 ```
 
-`build_assets.py` keys the logo off its studio background, grades the foreground cut-outs to moonlight and re-embeds the fonts. Each step needs its own source under `images/`; a step whose source is missing is skipped with a note instead of failing the run.
+`build_assets.py` keys the logo off its studio background, grades the foreground cut-outs into the hero plate's dusk and re-embeds the fonts. Each step needs its own source under `images/`; a step whose source is missing is skipped with a note instead of failing the run.
 
-**The logo and cut-out sources are not in the repository.** `images/logo.jpeg`, `tall-grass.webp`, `basalt-stones.webp`, `hill.webp` and `pine-tree.webp` were never committed, so `assets/img/vajradhan-logo.webp`, `vajradhan-logo-64.png`, `favicon.png` and `vajradhan6–9.webp` currently cannot be rebuilt — the committed files are the only copy. Put those sources back under `images/` and the steps run again.
+**The logo source is not in the repository.** `images/logo.jpeg` was never committed, so `assets/img/vajradhan-logo.webp`, `vajradhan-logo-64.png` and `favicon.png` cannot be rebuilt — the committed files are the only copy. Put it back under `images/` and the step runs again.
+
+The cut-outs' own originals are gone too, so the first build's moonlit output was kept as their source (`images/cutout-6..9.webp`); the grade now carries those into the hero plate's dusk.
 
 `build_hero.py` cuts `images/vajradhan11.png` into the five depth planes along hand-traced lines (skyline, horizon haze, city, road), filling the area behind each one so the parallax never shows a doubled edge. Pass `--png` to write transparent PNGs beside the webp plates.
 
