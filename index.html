@@ -48,6 +48,7 @@ body.is-locked{ overflow:hidden; height:100vh; }
 img{max-width:100%;display:block}
 a{color:inherit;text-decoration:none}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+button.cta{ border:1px solid var(--line); padding:17px 30px; }
 :focus-visible{ outline:1px solid var(--accent); outline-offset:4px; }
 /* keyboard gets what the pointer gets */
 .menu a.mlink:focus-visible{ color:#fff; }
@@ -434,7 +435,12 @@ html.nav-open .nav{ transform:none; transition:none; }
 .cta:hover{ color:var(--ink); border-color:var(--bone); }
 .cta:hover i{ transform:none; }
 .cta:hover svg path{ stroke:var(--ink); }
-.fin-note{ margin-top:22px; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
+.fin-claim{ margin-top:18px; color:var(--bone); }
+.fin-links{ list-style:none; margin:26px 0 0; padding:0; display:flex; flex-wrap:wrap;
+  justify-content:center; gap:10px 26px;
+  font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
+.fin-links a{ color:var(--bone-dim); transition:color .35s var(--ease); }
+.fin-links a:hover, .fin-links a:focus-visible{ color:var(--bone); }
 
 /* — footer · manifesto */
 .foot{ position:relative; padding:clamp(56px,9vh,110px) var(--pad) clamp(26px,4vh,40px); }
@@ -443,6 +449,8 @@ html.nav-open .nav{ transform:none; transition:none; }
   padding-bottom:34px; margin-bottom:8px; border-bottom:1px solid var(--line-soft); }
 .foot-brand img{ width:72px; height:auto; }
 .foot-brand p{ margin:0; max-width:52ch; font-size:clamp(18px,2vw,30px); line-height:1.35; color:var(--bone-dim); }
+.foot-keys{ margin-top:12px !important; font-size:10px !important; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--muted) !important; }
 .foot-grid > div:nth-child(n+3){ padding-left:clamp(18px,2.2vw,34px); border-left:1px solid var(--line-soft); }
 .foot h4{ margin:0 0 16px; font-size:10px; font-weight:500; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); }
 .foot ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; }
@@ -1128,16 +1136,23 @@ html.nav-open .nav{ transform:none; transition:none; }
       <img src="assets/img/vajradhan6.webp" alt="" width="1400" height="747" loading="lazy" decoding="async">
     </span>
   </div>
-  <div class="eyebrow" data-rv="fade">04 — Contact</div>
-  <h2 class="display" id="contact-title" data-rv="up">Bring us the unimaginable.</h2>
-  <p class="body-lg" data-rv="up">Tell us about the world you are trying to build, and we will show you how we would bring it to the screen.</p>
-  <!-- TODO: replace with the studio's real enquiries address -->
-  <a class="cta" href="mailto:hello@example.com" data-rv="fade" data-cursor data-press>
-    <i aria-hidden="true"></i><span>Start a project</span>
+  <div class="eyebrow" data-rv="fade">05 — Contact</div>
+  <h2 class="display" id="contact-title" data-rv="up">Have something worth creating?</h2>
+  <p class="body-lg" data-rv="up">Tell us what you’re building, what you’re imagining, or simply where you want to
+    take an idea.</p>
+  <p class="body-lg fin-claim" data-rv="up">Let’s create something worth remembering.</p>
+  <!-- TODO: the button is inert until there is a real business email to send to.
+       Make it <a class="cta" href="mailto:REAL@ADDRESS"> and drop the aria-disabled. -->
+  <button class="cta" type="button" aria-disabled="true" data-rv="fade" data-cursor data-press>
+    <i aria-hidden="true"></i><span>Start a Project</span>
     <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
-  </a>
-  <!-- TODO: studio location / time zone -->
-  <p class="fin-note" data-rv="fade">Studio location — to be announced</p>
+  </button>
+  <ul class="fin-links" data-rv="fade">
+    <!-- TODO: real business email, as <li><a href="mailto:...">hello@vajradhan...</a></li> -->
+    <!-- TODO: WhatsApp number, as <li><a href="https://wa.me/NUMBER">Let’s talk →</a></li> -->
+    <!-- TODO: the Instagram profile URL, so the handle below can become a link -->
+    <li>Instagram — @Vajradhan</li>
+  </ul>
 </section>
 
 <!-- ============================================================ footer -->
@@ -1153,30 +1168,27 @@ html.nav-open .nav{ transform:none; transition:none; }
   <div class="foot-grid">
     <div class="foot-brand" data-rv="up">
       <img src="assets/img/vajradhan-logo.webp" alt="Vajradhan" width="640" height="507" loading="lazy" decoding="async">
-      <p>A creative technology studio visualizing the unimaginable, through concept and design, VFX and CGI, virtual production, and finishing.</p>
+      <p>Independent Filmmaking &amp; Visual Production Studio</p>
+      <p class="foot-keys">Stories &bull; Visuals &bull; Impact</p>
     </div>
     <div data-rv="up"><h4>Studio</h4><ul>
-      <li><a href="#about" data-cursor>Philosophy</a></li>
-      <li><a href="#capabilities" data-cursor>Services</a></li>
+      <li><a href="#about" data-cursor>About</a></li>
+      <li><a href="#capabilities" data-cursor>Capabilities</a></li>
+      <li><a href="#work" data-cursor>Work</a></li>
       <li><a href="#process" data-cursor>Process</a></li>
+      <li><a href="#contact" data-cursor>Contact</a></li>
     </ul></div>
-    <div data-rv="up"><h4>Disciplines</h4><ul>
-      <li><a href="#capabilities" data-cursor>Concept &amp; Design</a></li>
-      <li><a href="#capabilities" data-cursor>VFX &amp; CGI</a></li>
-      <li><a href="#capabilities" data-cursor>Virtual Production</a></li>
-      <li><a href="#capabilities" data-cursor>Post &amp; Finishing</a></li>
-    </ul></div>
-    <!-- TODO: real social profiles and address -->
+    <!-- TODO: the three profiles below are text until the client supplies the
+         Instagram and LinkedIn URLs and the business email; each becomes
+         <li><a href="..." data-cursor>Name</a></li>. -->
     <div data-rv="up"><h4>Connect</h4><ul>
-      <li><a href="mailto:hello@example.com" data-cursor>Email</a></li>
-      <li><a href="#contact" data-cursor>Instagram</a></li>
-      <li><a href="#contact" data-cursor>LinkedIn</a></li>
+      <li>Instagram</li>
+      <li>LinkedIn</li>
+      <li>Email</li>
     </ul></div>
   </div>
   <div class="foot-base" data-rv="fade">
-    <span>© 2026 Vajradhan</span>
-    <span>Visualizing the unimaginable</span>
-    <span>WebGL · Onest · Unbounded</span>
+    <span>© 2026 Vajradhan Production. All rights reserved.</span>
   </div>
 </footer>
 
