@@ -255,6 +255,8 @@ html.nav-open .nav{ transform:none; transition:none; }
   .chip.is-press .num{ color:var(--ember); transform:translate3d(0,-2px,0); }
   .chip.is-press b{ color:#fff; }
   .chip.is-press .d{ color:var(--bone-dim); }
+  .card.is-press .card-fr{ outline-color:rgba(228,235,240,.3); }
+  .card.is-press .card-ar{ opacity:1; transform:none; }
   .plate.is-press::before{ opacity:1; }
   .plate.is-press .bar{ transform:scaleX(1); }
   .plate.is-press > :not(.bar){ transform:translate3d(8px,0,0); }
@@ -337,6 +339,31 @@ html.nav-open .nav{ transform:none; transition:none; }
 .plate .bar{ position:absolute; left:0; bottom:0; height:1px; width:100%; background:var(--accent);
   transform:scaleX(0); transform-origin:left; transition:transform .7s var(--ease-out); }
 .plate:hover .bar{ transform:scaleX(1); }
+
+/* — selected work: four plates, staggered. The frames hold their box before
+   any still arrives, so the grid never reflows when the client's images land. */
+.cards{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(14px,2vw,34px) clamp(14px,2vw,34px); align-items:start; }
+.card{ position:relative; }
+.card:nth-child(even){ transform:translateY(clamp(30px,6vw,110px)); }
+.card-fr{
+  position:relative; display:block; aspect-ratio:3/2; isolation:isolate;
+  outline:1px solid var(--line-soft); outline-offset:-1px;
+  transition:outline-color .5s var(--ease);
+  background:var(--card-img,none) center / cover no-repeat, var(--ink-2);
+}
+.card-fr::after{ content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(180deg, rgba(6,8,12,.04) 40%, rgba(6,8,12,.78)); }
+.card:hover .card-fr{ outline-color:rgba(228,235,240,.3); }
+.card-lab{ position:absolute; left:18px; right:18px; bottom:16px; z-index:3;
+  display:flex; align-items:flex-end; justify-content:space-between; gap:10px; pointer-events:none; }
+.card-lab b{ font-size:clamp(14px,1.2vw,19px); font-weight:400; letter-spacing:.04em; text-transform:uppercase; }
+.card-lab span{ font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--bone-dim); }
+.card-ar{ position:absolute; top:16px; right:16px; z-index:3; width:28px; height:28px;
+  opacity:0; transform:translate3d(-4px,4px,0); transition:opacity .5s var(--ease-out), transform .5s var(--ease-out); }
+.card:hover .card-ar{ opacity:1; transform:none; }
+.card-meta{ display:flex; justify-content:space-between; gap:12px; margin-top:14px;
+  font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+.card-line{ margin:10px 0 0; max-width:42ch; }
 
 /* — process: a ruled list */
 .rows{ border-top:1px solid var(--line-soft); }
@@ -570,6 +597,8 @@ html.nav-open .nav{ transform:none; transition:none; }
 [data-fg="about"] .fg-grass   { right:-6%; bottom:-120px; width:clamp(380px,44vw,820px); --d:1.4; }
 [data-fg="capabilities"] .fg-stones{ right:-7%; bottom:-90px; width:clamp(220px,22vw,420px); --d:1.1; }
 [data-fg="capabilities"] .fg-grass { left:-8%;  bottom:-130px; width:clamp(360px,40vw,760px); --d:1.5; }
+[data-fg="work"] .fg-pine     { right:-3%; bottom:-50px;  width:clamp(170px,17vw,320px); --d:1.2; }
+[data-fg="work"] .fg-grass    { left:-6%;  bottom:-140px; width:clamp(340px,36vw,700px); --d:1.6; }
 [data-fg="process"] .fg-hill  { right:-10%; bottom:-70px; width:clamp(420px,50vw,880px); --d:.6; }
 [data-fg="process"] .fg-stones{ left:-7%;  bottom:-90px;  width:clamp(200px,20vw,380px); --d:1.2; }
 [data-fg="contact"] .fg-pine  { left:-2%;  bottom:-60px;  width:clamp(150px,15vw,290px); --d:1.1; }
@@ -607,6 +636,8 @@ html.nav-open .nav{ transform:none; transition:none; }
   .stats div{ min-height:86px; padding:14px; }
   .stats div:nth-child(-n+2){ border-bottom:1px solid var(--line-soft); }
   .stats div:last-child{ border-right:0; }
+  .cards{ grid-template-columns:1fr; }
+  .card:nth-child(even){ transform:none; }
   .plates{ grid-template-columns:1fr; }
   .plate{ min-height:0; }
   .foot-grid{ grid-template-columns:1fr; }
@@ -615,7 +646,7 @@ html.nav-open .nav{ transform:none; transition:none; }
   .foot-base{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
   .foot-base span:last-child{ text-align:left; }
   /* one or two anchors per section; what stays is smaller */
-  [data-fg="about"] .fg-hill, [data-fg="process"] .fg-hill, [data-fg="foot"] .fg-stones{ display:none; }
+  [data-fg="about"] .fg-hill, [data-fg="process"] .fg-hill, [data-fg="work"] .fg-pine, [data-fg="foot"] .fg-stones{ display:none; }
   [data-fg] .fg-grass{ width:min(88%,480px); bottom:-80px; }
   [data-fg] .fg-stones{ width:min(60%,320px); bottom:-40px; }
   [data-fg] .fg-pine{ width:min(34%,170px); bottom:-40px; }
@@ -893,6 +924,70 @@ html.nav-open .nav{ transform:none; transition:none; }
       <p>Visual systems and content built to make brands more recognisable, consistent and memorable.</p>
       <ul><li>Creative Strategy</li><li>Social Content</li><li>Visual Branding</li></ul>
       <i class="bar" aria-hidden="true"></i>
+    </article>
+  </div>
+</section>
+
+<!-- ============================================================ selected work
+     TODO: every entry here needs approved imagery and verified details before
+     launch — no clients, metrics or results are claimed anywhere in it. -->
+<section class="sec" id="work" aria-labelledby="work-title">
+  <div class="fg" data-fg="work" aria-hidden="true">
+    <span class="fg-el fg-pine" data-fg-in="right">
+      <img src="assets/img/vajradhan9.webp" alt="" width="997" height="1400" loading="lazy" decoding="async">
+    </span>
+    <span class="fg-el fg-grass fg-el--sway" data-fg-in="left">
+      <img src="assets/img/vajradhan6.webp" alt="" width="1400" height="747" loading="lazy" decoding="async">
+    </span>
+  </div>
+  <div class="sec-head" data-rv="fade">
+    <span class="k"><b>03</b> — Selected Work</span><span class="rule"></span><span class="k">Film, campaign, experiment</span>
+  </div>
+  <div class="split-head">
+    <h2 class="display h-sec" id="work-title" data-rv="up">Work that speaks before we do.</h2>
+    <p class="body-lg" data-rv="up">A selection of films, campaigns and visual experiments created across production,
+      post and digital.</p>
+  </div>
+  <div class="cards" id="cards">
+    <article class="card" data-rv="up" data-cursor data-press>
+      <div class="card-fr">
+        <!-- TODO: approved still for KAIROXX. The frame holds its 3:2 box until one
+             lands, so dropping in a background image is the only change needed. -->
+        <span class="card-ar" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg></span>
+        <div class="card-lab"><b>KAIROXX</b><span>01</span></div>
+      </div>
+      <div class="card-meta"><span>Digital Storytelling / Social Media</span><span>01 / 04</span></div>
+      <p class="body card-line">Building a cinematic visual language around an emerging digital universe.</p>
+    </article>
+    <article class="card" data-rv="up" data-cursor data-press>
+      <div class="card-fr">
+        <!-- TODO: approved still for ZYROV. The frame holds its 3:2 box until one
+             lands, so dropping in a background image is the only change needed. -->
+        <span class="card-ar" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg></span>
+        <div class="card-lab"><b>ZYROV</b><span>02</span></div>
+      </div>
+      <div class="card-meta"><span>Brand Content / CGI / Visuals</span><span>02 / 04</span></div>
+      <p class="body card-line">Premium product visuals designed to give the brand a distinctive cinematic identity.</p>
+    </article>
+    <article class="card" data-rv="up" data-cursor data-press>
+      <div class="card-fr">
+        <!-- TODO: approved still for REAL ESTATE. The frame holds its 3:2 box until one
+             lands, so dropping in a background image is the only change needed. -->
+        <span class="card-ar" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg></span>
+        <div class="card-lab"><b>REAL ESTATE</b><span>03</span></div>
+      </div>
+      <div class="card-meta"><span>Cinematography / Social Content</span><span>03 / 04</span></div>
+      <p class="body card-line">Cinematic property visuals created to communicate space, atmosphere and detail.</p>
+    </article>
+    <article class="card" data-rv="up" data-cursor data-press>
+      <div class="card-fr">
+        <!-- TODO: approved still for VAJRADHAN ORIGINALS. The frame holds its 3:2 box until one
+             lands, so dropping in a background image is the only change needed. -->
+        <span class="card-ar" aria-hidden="true"><svg viewBox="0 0 14 14" fill="none"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg></span>
+        <div class="card-lab"><b>VAJRADHAN ORIGINALS</b><span>04</span></div>
+      </div>
+      <div class="card-meta"><span>Film / Experimental</span><span>04 / 04</span></div>
+      <p class="body card-line">Original visual stories created to explore new worlds, ideas and filmmaking techniques.</p>
     </article>
   </div>
 </section>
