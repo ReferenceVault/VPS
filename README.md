@@ -1,6 +1,6 @@
 # Vajradhan
 
-Static website for **Vajradhan**, a creative technology and visual production studio: *Visualizing the unimaginable.*
+Static website for **Vajradhan**, an independent filmmaking and visual production studio: *Stories. Crafted to be felt.*
 
 It is a single `index.html` that holds the markup, all the CSS and an inline Three.js scene. The hero plate is cut into five depth planes (sky and vortex, horizon haze, city, shore, road). Scrolling moves the camera through them, with haze, stars, snow, a cursor trail, a light bloom/grain/vignette pass and word-by-word heading reveals. The site makes no network requests. Three.js and the fonts are both vendored.
 
@@ -76,4 +76,4 @@ Generated images follow the project naming: `vajradhan11-*` (planes of the hero 
 
 ## Placeholder content
 
-Facts about the studio that weren't supplied are written as short placeholder copy and marked `<!-- TODO -->` in `index.html`: the contact email (currently `hello@example.com`), social links, studio location, one stat figure and the exact tool list. Search for `TODO` before launch.
+The copy is the client's own (see their handoff sheet). What is still outstanding is marked `<!-- TODO -->` in `index.html`: the business email (the contact button is inert until it exists), the Instagram and LinkedIn URLs, the WhatsApp number, the showreel and its poster, approved stills for the four projects, portraits of the two founders, the About stats figures, and the absolute `og:` URLs. Search for `TODO` before launch.
