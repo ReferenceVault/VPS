@@ -256,6 +256,8 @@ html.nav-open .nav{ transform:none; transition:none; }
   .chip.is-press b{ color:#fff; }
   .chip.is-press .d{ color:var(--bone-dim); }
   .card.is-press .card-fr{ outline-color:rgba(228,235,240,.3); }
+  .member.is-press .member-fr{ outline-color:rgba(228,235,240,.3); }
+  .reel-fr.is-press{ outline-color:rgba(228,235,240,.3); }
   .card.is-press .card-ar{ opacity:1; transform:none; }
   .plate.is-press::before{ opacity:1; }
   .plate.is-press .bar{ transform:scaleX(1); }
@@ -364,6 +366,34 @@ html.nav-open .nav{ transform:none; transition:none; }
 .card-meta{ display:flex; justify-content:space-between; gap:12px; margin-top:14px;
   font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
 .card-line{ margin:10px 0 0; max-width:42ch; }
+
+/* — showreel: one frame, centred, waiting on the reel. It borrows the work
+   cards' frame exactly: same box, same hairline, same scrim. */
+.reel-fr{
+  position:relative; width:min(1100px,100%); margin-inline:auto;
+  aspect-ratio:16/9; isolation:isolate; display:grid; place-items:center;
+  outline:1px solid var(--line-soft); outline-offset:-1px;
+  background:var(--reel-poster,none) center / cover no-repeat, var(--ink-2);
+  transition:outline-color .5s var(--ease);
+}
+.reel-fr::after{ content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(180deg, rgba(6,8,12,.04) 40%, rgba(6,8,12,.78)); }
+.reel-cta{ position:relative; z-index:2; margin-top:0; }
+.reel-fr:hover{ outline-color:rgba(228,235,240,.3); }
+
+/* — team: two members, the work card's frame at a portrait ratio */
+.team{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(18px,3vw,48px); align-items:start; }
+.member{ position:relative; }
+.member:nth-child(even){ transform:translateY(clamp(20px,4vw,72px)); }
+.member-fr{
+  position:relative; display:block; aspect-ratio:4/5; isolation:isolate;
+  outline:1px solid var(--line-soft); outline-offset:-1px;
+  transition:outline-color .5s var(--ease);
+  background:var(--portrait,none) center / cover no-repeat, var(--ink-2);
+}
+.member-fr::after{ content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(180deg, rgba(6,8,12,.04) 40%, rgba(6,8,12,.78)); }
+.member:hover .member-fr{ outline-color:rgba(228,235,240,.3); }
 
 /* — process: a ruled list */
 .rows{ border-top:1px solid var(--line-soft); }
@@ -597,6 +627,8 @@ html.nav-open .nav{ transform:none; transition:none; }
 [data-fg="about"] .fg-grass   { right:-6%; bottom:-120px; width:clamp(380px,44vw,820px); --d:1.4; }
 [data-fg="capabilities"] .fg-stones{ right:-7%; bottom:-90px; width:clamp(220px,22vw,420px); --d:1.1; }
 [data-fg="capabilities"] .fg-grass { left:-8%;  bottom:-130px; width:clamp(360px,40vw,760px); --d:1.5; }
+[data-fg="showreel"] .fg-stones{ left:-6%; bottom:-90px;  width:clamp(200px,20vw,380px); --d:1.2; }
+[data-fg="team"] .fg-grass    { right:-7%; bottom:-140px; width:clamp(340px,36vw,700px); --d:1.5; }
 [data-fg="work"] .fg-pine     { right:-3%; bottom:-50px;  width:clamp(170px,17vw,320px); --d:1.2; }
 [data-fg="work"] .fg-grass    { left:-6%;  bottom:-140px; width:clamp(340px,36vw,700px); --d:1.6; }
 [data-fg="process"] .fg-hill  { right:-10%; bottom:-70px; width:clamp(420px,50vw,880px); --d:.6; }
@@ -636,8 +668,8 @@ html.nav-open .nav{ transform:none; transition:none; }
   .stats div{ min-height:86px; padding:14px; }
   .stats div:nth-child(-n+2){ border-bottom:1px solid var(--line-soft); }
   .stats div:last-child{ border-right:0; }
-  .cards{ grid-template-columns:1fr; }
-  .card:nth-child(even){ transform:none; }
+  .cards, .team{ grid-template-columns:1fr; }
+  .card:nth-child(even), .member:nth-child(even){ transform:none; }
   .plates{ grid-template-columns:1fr; }
   .plate{ min-height:0; }
   .foot-grid{ grid-template-columns:1fr; }
@@ -649,6 +681,7 @@ html.nav-open .nav{ transform:none; transition:none; }
   [data-fg="about"] .fg-hill, [data-fg="process"] .fg-hill, [data-fg="work"] .fg-pine, [data-fg="foot"] .fg-stones{ display:none; }
   [data-fg] .fg-grass{ width:min(88%,480px); bottom:-80px; }
   [data-fg] .fg-stones{ width:min(60%,320px); bottom:-40px; }
+  [data-fg="showreel"] .fg-stones{ display:none; }
   [data-fg] .fg-pine{ width:min(34%,170px); bottom:-40px; }
 }
 @media (max-width:560px){
@@ -878,6 +911,32 @@ html.nav-open .nav{ transform:none; transition:none; }
        restore it with four real numbers rather than two. -->
 </section>
 
+<!-- ============================================================ showreel
+     TODO: the reel itself. When the client supplies it, put the poster on
+     .reel-fr as a background image and wire the button to the player; the
+     frame already holds its 16:9 box, so nothing will reflow. -->
+<section class="sec reel" id="showreel" aria-labelledby="reel-title">
+  <div class="fg" data-fg="showreel" aria-hidden="true">
+    <span class="fg-el fg-stones" data-fg-in="left">
+      <img src="assets/img/vajradhan7.webp" alt="" width="1400" height="908" loading="lazy" decoding="async">
+    </span>
+  </div>
+  <div class="sec-head" data-rv="fade">
+    <span class="k">Showreel</span><span class="rule"></span><span class="k">Stories, frames, worlds</span>
+  </div>
+  <div class="split-head">
+    <h2 class="display h-sec" id="reel-title" data-rv="up">Watch the vision.</h2>
+    <p class="body-lg" data-rv="up">A glimpse into how we see stories, frames and worlds.</p>
+  </div>
+  <div class="reel-fr" data-rv="up" data-cursor data-press>
+    <!-- TODO: showreel source and poster frame -->
+    <button class="cta reel-cta" type="button" aria-disabled="true" data-cursor data-press>
+      <i aria-hidden="true"></i><span>Play Showreel</span>
+      <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
+    </button>
+  </div>
+</section>
+
 <!-- ============================================================ capabilities -->
 <section class="sec" id="capabilities" data-cam="2" aria-labelledby="capabilities-title">
   <div class="fg" data-fg="capabilities" aria-hidden="true">
@@ -988,6 +1047,41 @@ html.nav-open .nav{ transform:none; transition:none; }
       </div>
       <div class="card-meta"><span>Film / Experimental</span><span>04 / 04</span></div>
       <p class="body card-line">Original visual stories created to explore new worlds, ideas and filmmaking techniques.</p>
+    </article>
+  </div>
+</section>
+
+<!-- ============================================================ team -->
+<section class="sec" id="team" aria-labelledby="team-title">
+  <div class="fg" data-fg="team" aria-hidden="true">
+    <span class="fg-el fg-grass fg-el--sway" data-fg-in="right">
+      <img src="assets/img/vajradhan6.webp" alt="" width="1400" height="747" loading="lazy" decoding="async">
+    </span>
+  </div>
+  <div class="sec-head" data-rv="fade">
+    <span class="k">Team</span><span class="rule"></span><span class="k">Two minds</span>
+  </div>
+  <div class="split-head">
+    <h2 class="display h-sec" id="team-title" data-rv="up">The people behind the frame.</h2>
+    <p class="body-lg" data-rv="up">Two minds. One visual language.</p>
+  </div>
+  <div class="team">
+    <article class="member" data-rv="up" data-cursor data-press>
+      <div class="member-fr">
+        <!-- TODO: professional portrait of Vikas -->
+        <div class="card-lab"><b>Vikas</b><span>01</span></div>
+      </div>
+      <div class="card-meta"><span>Founder / Director / Story &amp; Post</span><span>01 / 02</span></div>
+      <p class="body card-line">Story development, screenplay, dialogue, shot planning, scene direction and
+        post-production.</p>
+    </article>
+    <article class="member" data-rv="up" data-cursor data-press>
+      <div class="member-fr">
+        <!-- TODO: professional portrait of Jay Kumar -->
+        <div class="card-lab"><b>Jay Kumar</b><span>02</span></div>
+      </div>
+      <div class="card-meta"><span>Co-Founder / Cinematographer / Visual Director</span><span>02 / 02</span></div>
+      <p class="body card-line">Cinematography, visual direction, editing and post-production.</p>
     </article>
   </div>
 </section>
