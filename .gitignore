@@ -6,3 +6,10 @@ Thumbs.db
 *.log
 __pycache__/
 node_modules/
+
+# Source media stays out of the repo: masters are large, and only the
+# encodes the page actually serves belong here.
+*.mp4
+*.mov
+*.mkv
+*.avi

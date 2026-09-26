@@ -1,8 +1,12 @@
 # Vajradhan
 
-Static website for **Vajradhan**, a creative technology and visual production studio: *Visualizing the unimaginable.*
+Static website for **Vajradhan**, an independent filmmaking and visual production studio: *Stories. Crafted to be felt.*
 
-It is a single `index.html` that holds the markup, all the CSS and an inline Three.js scene. The hero photograph is cut into five depth planes (sky, moon, far range, mid range, near ridge). Scrolling moves the camera through them, with haze, stars, snow, a cursor trail, a light bloom/grain/vignette pass and word-by-word heading reveals. The site makes no network requests. Three.js and the fonts are both vendored.
+It is a single `index.html` that holds the markup, all the CSS and an inline Three.js scene. The hero plate is cut into five depth planes (sky and vortex, horizon haze, city, shore, road). Scrolling moves the camera through them, with haze, stars, snow, a cursor trail, a light bloom/grain/vignette pass and word-by-word heading reveals.
+
+Below the hero, the studio film hangs on a WebGL cloth: the video is painted into a canvas frame by frame and mapped onto a fabric that billows on a wind field and lifts under the pointer. On touch, or under `prefers-reduced-motion`, the plain video element shows instead.
+
+The site makes no third-party requests — Three.js, the fonts and the film are all local.
 
 ## Run it locally
 
@@ -49,10 +53,11 @@ Every path is relative, so the site works under the `/<repo>/` subpath. The `.no
 index.html              page, styles and the inline Three.js scene
 favicon.png
 assets/fonts.css        Onest + Unbounded, embedded as base64 woff2
-assets/img/             generated planes, stills, cut-outs and logo
+assets/img/             generated planes, cut-outs and logo
 vendor/three.min.js     Three.js r149 (MIT, see vendor/three.LICENSE)
 images/                 source images
-tools/build_assets.py   rebuilds everything in assets/ from images/
+tools/build_assets.py   rebuilds the logo and cut-outs in assets/ from images/
+tools/build_hero.py     cuts the hero plate into its five depth planes
 tools/fonts-src/        source woff2 files and their OFL licences
 ```
 
@@ -63,15 +68,27 @@ pip install pillow numpy
 python tools/build_assets.py
 ```
 
-The script:
-- paints the mock-up's baked-in type out of `images/vajradhan1.webp`
-- cuts the five depth planes along hand-traced silhouettes, filling the area behind each ridge so the parallax never shows a doubled edge
-- keys the logo off its studio background
-- grades the foreground cut-outs to moonlight
-- re-embeds the fonts
+`build_assets.py` keys the logo off its studio background, grades the foreground cut-outs into the hero plate's dusk and re-embeds the fonts. Each step needs its own source under `images/`; a step whose source is missing is skipped with a note instead of failing the run.
 
-Generated images follow the project naming: `vajradhan1-*` (planes of photo 1), `vajradhan2–5` (work stills), `vajradhan6–9` (cut-outs), `vajradhan-logo`.
+**The logo source is not in the repository.** `images/logo.jpeg` was never committed, so `assets/img/vajradhan-logo.webp`, `vajradhan-logo-64.png` and `favicon.png` cannot be rebuilt — the committed files are the only copy. Put it back under `images/` and the step runs again.
+
+The cut-outs' own originals are gone too, so the first build's moonlit output was kept as their source (`images/cutout-6..9.webp`); the grade now carries those into the hero plate's dusk.
+
+`build_hero.py` cuts `images/vajradhan11.png` into the five depth planes along hand-traced lines (skyline, horizon haze, city, road), filling the area behind each one so the parallax never shows a doubled edge. Pass `--png` to write transparent PNGs beside the webp plates.
+
+Generated images follow the project naming: `vajradhan11-*` (planes of the hero plate), `vajradhan6–9` (cut-outs), `vajradhan-logo`.
+
+## The studio film
+
+`assets/videos/vajradhan1.mp4` is the file as delivered: **HEVC (hvc1)**, 1918x1080, 60 fps, 10.1 s, 17.35 MB. It is not re-encoded.
+
+Two things follow from that, and both want a decision before launch:
+
+- **HEVC only plays where the operating system provides a decoder.** Chrome and Edge lean on the OS for it, Safari has it, and Firefox does not support it at all. A visitor whose machine cannot decode it sees the card with nothing in it.
+- **There is no poster frame yet**, which is exactly what would cover that case. It needs one frame exported as WebP; ffmpeg is the usual way.
+
+The `<video>` is muted, looped, inline, `preload="metadata"`, without controls, and is started and stopped by an IntersectionObserver so nothing decodes off-screen.
 
 ## Placeholder content
 
-Facts about the studio that weren't supplied are written as short placeholder copy and marked `<!-- TODO -->` in `index.html`: project names and credits, the contact email (currently `hello@example.com`), social links, studio location, one stat figure and the exact tool list. Search for `TODO` before launch.
+The copy is the client's own (see their handoff sheet). What is still outstanding is marked `<!-- TODO -->` in `index.html`: the business email (the contact button is inert until it exists), the Instagram and LinkedIn URLs, the WhatsApp number, the showreel and its poster, a poster frame for the studio film, approved stills for the four projects, the About stats figures, and the absolute `og:` URLs. Search for `TODO` before launch.
