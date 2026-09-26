@@ -429,26 +429,27 @@ html.nav-open .nav{ transform:none; transition:none; }
 
 /* — footer · manifesto */
 .foot{ position:relative; padding:clamp(56px,9vh,110px) var(--pad) clamp(26px,4vh,40px); }
-.foot-grid{ position:relative; display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(22px,4vw,60px); }
+.foot-grid{ position:relative; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(22px,4vw,60px); }
 .foot-brand{ grid-column:1 / -1; display:grid; grid-template-columns:84px minmax(0,1fr); gap:24px; align-items:center;
   padding-bottom:34px; margin-bottom:8px; border-bottom:1px solid var(--line-soft); }
 .foot-brand img{ width:72px; height:auto; transition:transform .7s var(--ease-out); }
 .foot-brand:hover img{ transform:scale(1.04); }
+.foot-lines{ min-width:0; }
 .foot-brand p{ margin:0; max-width:52ch; font-size:clamp(18px,2vw,30px); line-height:1.35; color:var(--bone-dim); }
-.foot-keys{ margin-top:12px !important; font-size:10px !important; letter-spacing:.2em;
-  text-transform:uppercase; color:var(--muted) !important; }
+/* specific enough to beat .foot-brand p, which sets the big line's size */
+.foot-brand .foot-keys{ margin-top:12px; font-size:10px; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--muted); }
 .foot-grid > div:nth-child(n+3){ padding-left:clamp(18px,2.2vw,34px); border-left:1px solid var(--line-soft); }
 .foot h4{ margin:0 0 16px; font-size:10px; font-weight:500; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); }
 .foot ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; }
-.foot li{ overflow:hidden; }
-.foot li a{ display:inline-block; font-size:13px; color:#909ca7;
+.foot li{ overflow:hidden; font-size:13px; color:#909ca7; }
+.foot li a{ display:inline-block; color:inherit;
   transition:color .35s var(--ease), transform .5s var(--ease-out); }
 .foot li a:hover, .foot li a:focus-visible{ transform:translate3d(6px,0,0); }
 .foot li a:hover{ color:var(--bone); }
-.foot-base{ position:relative; display:grid; grid-template-columns:1fr auto 1fr; gap:20px; align-items:center;
+.foot-base{ position:relative; display:flex; flex-wrap:wrap; gap:8px 20px; align-items:center;
   margin-top:clamp(38px,6vh,74px); padding-top:20px; border-top:1px solid var(--line-soft);
   font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
-.foot-base span:last-child{ text-align:right; }
 
 /* ==================================================================== film
    The card the frame sequence used, unchanged: the page's own column with the
@@ -642,8 +643,7 @@ html.nav-open .nav{ transform:none; transition:none; }
   .foot-grid{ grid-template-columns:1fr; }
   .foot-brand{ grid-column:auto; grid-template-columns:minmax(0,1fr); row-gap:16px; }
   .foot-grid > div:nth-child(n+3){ padding-left:0; border-left:0; }
-  .foot-base{ display:flex; flex-direction:column; align-items:flex-start; gap:8px; }
-  .foot-base span:last-child{ text-align:left; }
+  .foot-base{ flex-direction:column; align-items:flex-start; gap:8px; }
   /* one or two anchors per section; what stays is smaller */
   [data-fg="about"] .fg-hill, [data-fg="process"] .fg-hill, [data-fg="work"] .fg-pine, [data-fg="foot"] .fg-stones{ display:none; }
   [data-fg] .fg-grass{ width:min(88%,480px); bottom:-80px; }
@@ -1041,8 +1041,10 @@ html.nav-open .nav{ transform:none; transition:none; }
   <div class="foot-grid">
     <div class="foot-brand" data-rv="up">
       <img src="assets/img/vajradhan-logo.webp" alt="Vajradhan" width="640" height="507" loading="lazy" decoding="async">
-      <p>Independent Filmmaking &amp; Visual Production Studio</p>
-      <p class="foot-keys">Stories &bull; Visuals &bull; Impact</p>
+      <div class="foot-lines">
+        <p>Independent Filmmaking &amp; Visual Production Studio</p>
+        <p class="foot-keys">Stories &bull; Visuals &bull; Impact</p>
+      </div>
     </div>
     <div data-rv="up"><h4>Studio</h4><ul>
       <li><a href="#about" data-cursor>About</a></li>
