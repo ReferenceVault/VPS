@@ -494,7 +494,9 @@ html.nav-open .nav{ transform:none; transition:none; }
 @keyframes seq-breathe{ from{ opacity:.72; } 50%{ opacity:1; } to{ opacity:.72; } }
 @media (hover:hover) and (pointer:fine){
   .seq-card:hover{ outline-color:rgba(228,235,240,.3); }
-  .seq-card:hover .seq-lean{ --sc:1.03; filter:brightness(1.06); }
+  /* no scale here: the fabric overdraws the card, so growing it brought its
+     own edges into view. The lean and the brightness carry the hover. */
+  .seq-card:hover .seq-lean{ filter:brightness(1.06); }
   .seq-card:hover .seq-edge{ opacity:1; animation:seq-breathe 6.1s var(--ease-io) infinite; }
 }
 /* The fabric overdraws the card by the cloth bleed on every side so the
@@ -510,7 +512,7 @@ html.nav-open .nav{ transform:none; transition:none; }
 .seq-v{ transition:opacity .7s var(--ease-out); }
 
 /* touch: a press stands in for the hover, and is released on every exit */
-.seq-card.is-press .seq-lean{ --sc:.995; filter:brightness(1.04); }
+.seq-card.is-press .seq-lean{ filter:brightness(1.04); }
 .seq-card.is-press .seq-edge{ opacity:1; }
 @media (max-width:1080px){ .seq-card{ width:76%; } }
 @media (max-width:820px){ .seq-card{ width:88%; } }
