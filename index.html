@@ -67,7 +67,6 @@ button.cta{ border:1px solid var(--line); padding:17px 30px; }
 .foot li a:focus-visible{ color:var(--bone); }
 .rail button:focus-visible i{ transform:none; background:var(--bone-dim); }
 .brand:focus-visible img{ transform:scale(1.05); }
-.sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; }
 
 /* ============================================================= layers */
 #gl{
@@ -265,12 +264,10 @@ html.nav-open .nav{ transform:none; transition:none; }
 /* Touch has no hover, so a press stands in for it: the same moves, quicker,
    and released on every exit path (see wirePress). */
 @media (hover:none){
-  [data-press].is-press{ }
   .chip.is-press .num{ color:var(--ember); transform:translate3d(0,-2px,0); }
   .chip.is-press b{ color:#fff; }
   .chip.is-press .d{ color:var(--bone-dim); }
   .card.is-press .card-fr{ outline-color:rgba(228,235,240,.3); }
-  .member.is-press .member-fr{ outline-color:rgba(228,235,240,.3); }
   .reel-fr.is-press{ outline-color:rgba(228,235,240,.3); }
   .card.is-press .card-ar{ opacity:1; transform:none; }
   .plate.is-press::before{ opacity:1; }
@@ -383,20 +380,6 @@ html.nav-open .nav{ transform:none; transition:none; }
   background:linear-gradient(180deg, rgba(6,8,12,.04) 40%, rgba(6,8,12,.78)); }
 .reel-cta{ position:relative; z-index:2; margin-top:0; }
 .reel-fr:hover{ outline-color:rgba(228,235,240,.3); }
-
-/* — team: two members, the work card's frame at a portrait ratio */
-.team{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(18px,3vw,48px); align-items:start; }
-.member{ position:relative; }
-.member:nth-child(even){ transform:translateY(clamp(20px,4vw,72px)); }
-.member-fr{
-  position:relative; display:block; aspect-ratio:4/5; isolation:isolate;
-  outline:1px solid var(--line-soft); outline-offset:-1px;
-  transition:outline-color .5s var(--ease);
-  background:var(--portrait,none) center / cover no-repeat, var(--ink-2);
-}
-.member-fr::after{ content:''; position:absolute; inset:0; pointer-events:none;
-  background:linear-gradient(180deg, rgba(6,8,12,.04) 40%, rgba(6,8,12,.78)); }
-.member:hover .member-fr{ outline-color:rgba(228,235,240,.3); }
 
 /* — process: a ruled list */
 .rows{ border-top:1px solid var(--line-soft); }
@@ -634,8 +617,8 @@ html.nav-open .nav{ transform:none; transition:none; }
   .hero-copy{ max-width:none; }
   .rail{ display:none; }
   .chip .d{ display:block;  font-size:12px; }
-  .cards, .team{ grid-template-columns:1fr; }
-  .card:nth-child(even), .member:nth-child(even){ transform:none; }
+  .cards{ grid-template-columns:1fr; }
+  .card:nth-child(even){ transform:none; }
   .plates{ grid-template-columns:1fr; }
   .plate{ min-height:0; }
   .foot-grid{ grid-template-columns:1fr; }
@@ -948,23 +931,20 @@ html.nav-open .nav{ transform:none; transition:none; }
     <h2 class="display h-sec" id="team-title" data-rv="up">The people behind the frame.</h2>
     <p class="body-lg" data-rv="up">Two minds. One visual language.</p>
   </div>
-  <div class="team">
-    <article class="member" data-rv="up" data-cursor data-press>
-      <div class="member-fr">
-        <!-- TODO: professional portrait of Vikas -->
-        <div class="card-lab"><b>Vikas</b><span>01</span></div>
-      </div>
-      <div class="card-meta"><span>Founder / Director / Story &amp; Post</span><span>01 / 02</span></div>
-      <p class="body card-line">Story development, screenplay, dialogue, shot planning, scene direction and
-        post-production.</p>
+  <div class="plates">
+    <article class="plate" data-focus="0" data-rv="up" data-cursor data-press>
+      <span class="k">01</span>
+      <h3>Vikas</h3>
+      <p>Story development, screenplay, dialogue, shot planning, scene direction and post-production.</p>
+      <ul><li>Founder</li><li>Director</li><li>Story &amp; Post</li></ul>
+      <i class="bar" aria-hidden="true"></i>
     </article>
-    <article class="member" data-rv="up" data-cursor data-press>
-      <div class="member-fr">
-        <!-- TODO: professional portrait of Jay Kumar -->
-        <div class="card-lab"><b>Jay Kumar</b><span>02</span></div>
-      </div>
-      <div class="card-meta"><span>Co-Founder / Cinematographer / Visual Director</span><span>02 / 02</span></div>
-      <p class="body card-line">Cinematography, visual direction, editing and post-production.</p>
+    <article class="plate" data-focus="1" data-rv="up" data-cursor data-press>
+      <span class="k">02</span>
+      <h3>Jay Kumar</h3>
+      <p>Cinematography, visual direction, editing and post-production.</p>
+      <ul><li>Co-Founder</li><li>Cinematographer</li><li>Visual Director</li></ul>
+      <i class="bar" aria-hidden="true"></i>
     </article>
   </div>
 </section>
