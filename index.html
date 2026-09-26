@@ -503,11 +503,15 @@ html.nav-open .nav{ transform:none; transition:none; }
    billow and its contact shadow have room; its corner and edge are drawn in
    the shader, and the scrim is painted into the plate. It fades up once it is
    really carrying the picture, so the swap is never a pop. */
+/* The fabric is overscanned and the card keeps clipping it, so the billow,
+   the contact shadow and the lean all happen inside the frame: whatever the
+   cloth does, the card's own rounded rectangle is the only edge on screen.
+   (The work cards let the bleed overhang; this one is a picture in a frame.) */
 .cloth-out{ position:absolute; pointer-events:none; z-index:1; opacity:0;
+  transform:scale(1.045); transform-origin:50% 50%;
   transition:opacity .7s var(--ease-out); }
 .seq-card.cloth-in .cloth-out{ opacity:1; }
-.seq-card.on-cloth{ overflow:visible; outline:0 !important; background:none; }
-.seq-card.on-cloth::after{ display:none; }
+.seq-card.on-cloth::after{ display:none; }   /* the scrim is painted into the plate */
 .seq-card.on-cloth .seq-v{ opacity:0; }    /* still decoding, no longer drawn */
 .seq-v{ transition:opacity .7s var(--ease-out); }
 
