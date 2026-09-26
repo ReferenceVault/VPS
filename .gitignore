@@ -10,6 +10,7 @@ node_modules/
 # Source media stays out of the repo: masters are large, and only the
 # encodes the page actually serves belong here.
 *.mp4
+!assets/videos/vajradhan1.mp4
 *.mov
 *.mkv
 *.avi
