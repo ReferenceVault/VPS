@@ -483,6 +483,7 @@ html.nav-open .nav{ transform:none; transition:none; }
   position:absolute; inset:0; width:100%; height:100%;
   object-fit:cover; object-position:50% 50%;
   background:var(--ink-2); display:block;
+  transition:opacity .7s var(--ease-out);
 }
 /* the bloom the card lifted on hover, on the period the old stills' lights
    breathed to */
@@ -514,7 +515,6 @@ html.nav-open .nav{ transform:none; transition:none; }
 .seq-card.cloth-in .cloth-out{ opacity:1; }
 .seq-card.on-cloth::after{ display:none; }   /* the scrim is painted into the plate */
 .seq-card.on-cloth .seq-v{ opacity:0; }    /* still decoding, no longer drawn */
-.seq-v{ transition:opacity .7s var(--ease-out); }
 
 /* touch: a press stands in for the hover, and is released on every exit */
 .seq-card.is-press .seq-lean{ filter:brightness(1.04); }
@@ -799,7 +799,7 @@ html.nav-open .nav{ transform:none; transition:none; }
      TODO: the reel itself. When the client supplies it, put the poster on
      .reel-fr as a background image and wire the button to the player; the
      frame already holds its 16:9 box, so nothing will reflow. -->
-<section class="sec reel" id="showreel" aria-labelledby="reel-title">
+<section class="sec" id="showreel" aria-labelledby="reel-title">
   <div class="fg" data-fg="showreel" aria-hidden="true">
     <span class="fg-el fg-stones" data-fg-in="left">
       <img src="assets/img/vajradhan7.webp" alt="" width="1400" height="908" loading="lazy" decoding="async">
