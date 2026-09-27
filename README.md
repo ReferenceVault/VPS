@@ -52,13 +52,13 @@ Every path is relative, so the site works under the `/<repo>/` subpath. The `.no
 ```
 index.html              page, styles and the inline Three.js scene
 favicon.png
-assets/fonts.css        Onest + Unbounded, embedded as base64 woff2
+assets/fonts.css        Michroma + Space Grotesk + Space Mono, base64 woff2
 assets/img/             generated planes, cut-outs and logo
 vendor/three.min.js     Three.js r149 (MIT, see vendor/three.LICENSE)
 images/                 source images
 tools/build_assets.py   rebuilds the logo and cut-outs in assets/ from images/
 tools/build_hero.py     cuts the hero plate into its five depth planes
-tools/fonts-src/        source woff2 files and their OFL licences
+tools/fonts-src/        source TTFs and their OFL licences
 ```
 
 ## Rebuilding the assets

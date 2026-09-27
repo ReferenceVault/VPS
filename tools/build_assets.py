@@ -1,8 +1,8 @@
 """
 Vajradhan asset build.
 
-Regenerates the logo, the cut-outs and the fonts under assets/ from the
-sources in images/ and tools/fonts-src/. The hero plate has its own script,
+Regenerates the logo and the cut-outs under assets/ from the sources in
+images/. The fonts have their own script, tools/build_fonts.py. The hero plate has its own script,
 tools/build_hero.py, which shares the cutting helpers below. Run from the
 repository root:
 
@@ -21,9 +21,7 @@ What it makes
       hero plate's dusk
   assets/img/vajradhan-logo.webp     the mark, keyed off its leather ground
   assets/img/vajradhan-logo-64.png   favicon
-  assets/fonts.css                   Onest + Unbounded as base64 woff2
 """
-import base64
 import os
 import shutil
 
@@ -33,7 +31,6 @@ from PIL import Image, ImageDraw, ImageFilter
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'images')
 OUT = os.path.join(ROOT, 'assets', 'img')
-FONTS = os.path.join(ROOT, 'tools', 'fonts-src')
 os.makedirs(OUT, exist_ok=True)
 
 
@@ -216,28 +213,6 @@ def build_cutouts():
         print('cut-out', k, v)
 
 
-# ---------------------------------------------------------------- fonts
-FACES = [('Onest', 300, 'onest-latin-300-normal.woff2'),
-         ('Onest', 400, 'onest-latin-400-normal.woff2'),
-         ('Onest', 500, 'onest-latin-500-normal.woff2'),
-         ('Unbounded', 400, 'unbounded-latin-400-normal.woff2'),
-         ('Unbounded', 500, 'unbounded-latin-500-normal.woff2')]
-
-
-def build_fonts():
-    lines = ['/* Onest and Unbounded (SIL Open Font License 1.1, see tools/fonts-src),',
-             '   latin subsets embedded as base64 woff2 so the page makes no font request. */']
-    for fam, wt, f in FACES:
-        with open(os.path.join(FONTS, f), 'rb') as fh:
-            b = base64.b64encode(fh.read()).decode('ascii')
-        lines.append("@font-face{font-family:'%s';font-style:normal;font-weight:%d;"
-                     "font-display:swap;src:url(data:font/woff2;base64,%s) format('woff2');}"
-                     % (fam, wt, b))
-    with open(os.path.join(ROOT, 'assets', 'fonts.css'), 'w', newline='\n') as fh:
-        fh.write('\n'.join(lines) + '\n')
-    print('fonts.css', os.path.getsize(os.path.join(ROOT, 'assets', 'fonts.css')), 'bytes')
-
-
 def missing(*names):
     """The sources a step needs that are not in images/."""
     return [n for n in names if not os.path.exists(src(n))]
@@ -255,6 +230,5 @@ def step(name, needs, run):
 if __name__ == '__main__':
     logo = step('logo', ['logo.jpeg'], build_logo)
     step('cut-outs', [s for s, _ in CUTOUTS], build_cutouts)
-    build_fonts()
     if logo:
         shutil.copyfile(out('vajradhan-logo-64.png'), os.path.join(ROOT, 'favicon.png'))
