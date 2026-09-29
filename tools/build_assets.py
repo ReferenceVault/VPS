@@ -1,10 +1,11 @@
 """
 Vajradhan asset build.
 
-Regenerates the logo, the cut-outs and the fonts under assets/ from the
-sources in images/ and tools/fonts-src/. The hero plate has its own script,
-tools/build_hero.py, which shares the cutting helpers below. Run from the
-repository root:
+Regenerates the logo under assets/ from its source in images/. The other
+generated assets have their own scripts: tools/build_fonts.py for the faces,
+tools/cut_layers.py and tools/build_hero_layers.py for the hero's layers, and
+tools/build_foreground.py for the rock pieces that ride at the foot of each
+section. Run from the repository root:
 
     python tools/build_assets.py
 
@@ -17,13 +18,9 @@ still rebuild do. The committed files under assets/img are the record of the
 ones that cannot.
 
 What it makes
-  assets/img/vajradhan6..9.webp      foreground cut-outs, graded to the
-      hero plate's dusk
   assets/img/vajradhan-logo.webp     the mark, keyed off its leather ground
   assets/img/vajradhan-logo-64.png   favicon
-  assets/fonts.css                   Onest + Unbounded as base64 woff2
 """
-import base64
 import os
 import shutil
 
@@ -33,7 +30,6 @@ from PIL import Image, ImageDraw, ImageFilter
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, 'images')
 OUT = os.path.join(ROOT, 'assets', 'img')
-FONTS = os.path.join(ROOT, 'tools', 'fonts-src')
 os.makedirs(OUT, exist_ok=True)
 
 
@@ -72,58 +68,6 @@ def blur(a, sigma):
         for _ in range(3):
             a = _box(a, r, axis)
     return a
-
-
-def add_grain(img, hole, sigma, seed):
-    rnd = np.random.default_rng(seed)
-    n = rnd.normal(0, sigma, img.shape[:2])
-    n = blur(n, .6)
-    res = img.copy()
-    res[hole] += n[hole][:, None]
-    return res
-
-
-# ------------------------------------------------------- cutting the planes
-# Shared with tools/build_hero.py, which owns the hero plate's own lines.
-def line_y(poly, W):
-    xs, ys = zip(*poly)
-    return np.interp(np.arange(W), xs, ys)
-
-
-def below(poly, W, H, feather=1.4):
-    y = line_y(poly, W)
-    yy = np.arange(H)[:, None]
-    m = np.clip((yy - y[None, :]) + .5, 0, 1)
-    return blur(m, feather) if feather else m
-
-
-def extend_behind(img, poly, band=22, seed=0):
-    """Replace everything under `poly` with the colour just above it, smeared
-    down and softened — the pixels a plane shows when the one in front of it
-    slides aside. Without this the parallax reveals a second copy of the
-    nearer ridge instead of more of the farther one."""
-    H, W, _ = img.shape
-    y = line_y(poly, W).astype(int)
-    res = img.copy()
-    col = np.zeros((W, 3))
-    for x in range(W):
-        y0 = max(0, y[x] - band - 6)
-        y1 = max(1, y[x] - 6)
-        col[x] = img[y0:y1, x].mean(0)
-    # wide, or every column's own colour runs down as a curtain
-    col = blur(np.repeat(col[None], 3, 0), 38)[1]
-    haze = col.mean(0)
-    yy = np.arange(H)[:, None]
-    under = yy >= (y[None, :] - 2)
-    depth = np.clip((yy - y[None, :]) / 220.0, 0, 1)[..., None]
-    fillc = (col[None, :, :] * (1 - depth) + haze * depth) * (1 - .30 * depth)
-    res = np.where(under[..., None], fillc, res)
-    # soften the seam the smear leaves at the silhouette
-    soft = blur(res, 3)
-    seam = (np.abs(yy - y[None, :]) < 6)[..., None]
-    res = np.where(seam, soft, res)
-    return add_grain(res, under, 2.2, seed)
-
 
 
 # ----------------------------------------------------------------- the logo
@@ -175,69 +119,6 @@ def build_logo():
     return lg.size
 
 
-# -------------------------------------------------------------- cut-outs
-# The originals (tall-grass, basalt-stones, hill, pine-tree) are not in the
-# repository, so the moonlit cut-outs the first build produced are kept as the
-# sources instead. They are already keyed and already neutral, so the grade
-# below only has to move them from that night to this one.
-CUTOUTS = [('cutout-6.webp', 'vajradhan6.webp'), ('cutout-7.webp', 'vajradhan7.webp'),
-           ('cutout-8.webp', 'vajradhan8.webp'), ('cutout-9.webp', 'vajradhan9.webp')]
-
-
-# the plate's own foreground, measured: deep shadow 32-29-27, horizon 81-73-71
-SHADOW_TINT = np.array([1.16, 1.00, 0.84])
-LIGHT_TINT = np.array([1.06, 1.00, 0.94])
-
-
-def duskfire(im):
-    """Carry a moonlit cut-out into the vortex plate's dusk: the slate blues
-    pulled back to neutral, then warmed the way the sunset warms the bank —
-    hardest in the shadows, barely at all where a rim catches the light."""
-    rgba = np.asarray(im.convert('RGBA')).astype(np.float64)
-    rgb = rgba[..., :3]
-    L = lum(rgb)[..., None]
-    # most of the cold cast lives in the chroma; keep a third of it for shape
-    rgb = L + (rgb - L) * .34
-    t = np.clip(L / 90.0, 0, 1)                      # shadow -> light ramp
-    tint = SHADOW_TINT * (1 - t) + LIGHT_TINT * t
-    rgb = rgb * tint * 1.04
-    rgba[..., :3] = np.clip(rgb, 0, 255)
-    return Image.fromarray(rgba.astype(np.uint8), 'RGBA')
-
-
-def build_cutouts():
-    sizes = {}
-    for s, d in CUTOUTS:
-        im = duskfire(Image.open(src(s)))
-        im.thumbnail((1400, 1400), Image.LANCZOS)
-        im.save(out(d), 'WEBP', quality=84, method=6)
-        sizes[d] = im.size
-    for k, v in sizes.items():
-        print('cut-out', k, v)
-
-
-# ---------------------------------------------------------------- fonts
-FACES = [('Onest', 300, 'onest-latin-300-normal.woff2'),
-         ('Onest', 400, 'onest-latin-400-normal.woff2'),
-         ('Onest', 500, 'onest-latin-500-normal.woff2'),
-         ('Unbounded', 400, 'unbounded-latin-400-normal.woff2'),
-         ('Unbounded', 500, 'unbounded-latin-500-normal.woff2')]
-
-
-def build_fonts():
-    lines = ['/* Onest and Unbounded (SIL Open Font License 1.1, see tools/fonts-src),',
-             '   latin subsets embedded as base64 woff2 so the page makes no font request. */']
-    for fam, wt, f in FACES:
-        with open(os.path.join(FONTS, f), 'rb') as fh:
-            b = base64.b64encode(fh.read()).decode('ascii')
-        lines.append("@font-face{font-family:'%s';font-style:normal;font-weight:%d;"
-                     "font-display:swap;src:url(data:font/woff2;base64,%s) format('woff2');}"
-                     % (fam, wt, b))
-    with open(os.path.join(ROOT, 'assets', 'fonts.css'), 'w', newline='\n') as fh:
-        fh.write('\n'.join(lines) + '\n')
-    print('fonts.css', os.path.getsize(os.path.join(ROOT, 'assets', 'fonts.css')), 'bytes')
-
-
 def missing(*names):
     """The sources a step needs that are not in images/."""
     return [n for n in names if not os.path.exists(src(n))]
@@ -254,7 +135,5 @@ def step(name, needs, run):
 
 if __name__ == '__main__':
     logo = step('logo', ['logo.jpeg'], build_logo)
-    step('cut-outs', [s for s, _ in CUTOUTS], build_cutouts)
-    build_fonts()
     if logo:
         shutil.copyfile(out('vajradhan-logo-64.png'), os.path.join(ROOT, 'favicon.png'))

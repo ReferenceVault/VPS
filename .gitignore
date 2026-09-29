@@ -7,10 +7,14 @@ Thumbs.db
 __pycache__/
 node_modules/
 
-# Source media stays out of the repo: masters are large, and only the
-# encodes the page actually serves belong here.
+# Source media stays out of the repo: it is large, and only the encodes the
+# page actually serves belong here.
 *.mp4
-!assets/videos/vajradhan1.mp4
 *.mov
 *.mkv
 *.avi
+
+# Full-size cutout masters: working files, not shipping assets. The site only
+# ever loads the resized WebPs in assets/img.
+masters/
+*-cutout.png
