@@ -2,11 +2,9 @@
 
 Static website for **Vajradhan**, an independent filmmaking and visual production studio: *Stories. Crafted to be felt.*
 
-It is a single `index.html` that holds the markup, all the CSS and an inline Three.js scene. The hero plate is cut into five depth planes (sky and vortex, horizon haze, city, shore, road). Scrolling moves the camera through them, with haze, stars, snow, a cursor trail, a light bloom/grain/vignette pass and word-by-word heading reveals.
+It is a single `index.html` that holds the markup, all the CSS and an inline Three.js scene. The backdrop is six planes hung at their own depths — the vortex plate, an orbital ring drawn twice (once behind the figure and once, mirrored, in front of it), the cosmic eye, the figure of light and the cloaked man on his rock. Scrolling moves the camera through them, so the near planes slide past the far ones. On top of that: haze, stars, snow, a cursor trail, a light bloom/grain/vignette pass and word-by-word heading reveals.
 
-Below the hero, the studio film hangs on a WebGL cloth: the video is painted into a canvas frame by frame and mapped onto a fabric that billows on a wind field and lifts under the pointer. On touch, or under `prefers-reduced-motion`, the plain video element shows instead.
-
-The site makes no third-party requests — Three.js, the fonts and the film are all local.
+The site makes no third-party requests — Three.js and the fonts are local.
 
 ## Run it locally
 
@@ -53,12 +51,16 @@ Every path is relative, so the site works under the `/<repo>/` subpath. The `.no
 index.html              page, styles and the inline Three.js scene
 favicon.png
 assets/fonts.css        Michroma + Space Grotesk + Space Mono, base64 woff2
-assets/img/             generated planes, cut-outs and logo
+assets/img/             generated hero layers, foreground pieces and logo
 vendor/three.min.js     Three.js r149 (MIT, see vendor/three.LICENSE)
 images/                 source images
-tools/build_assets.py   rebuilds the logo and cut-outs in assets/ from images/
-tools/build_hero.py     cuts the hero plate into its five depth planes
+tools/build_assets.py   rebuilds the logo in assets/ from images/
+tools/build_fonts.py    subsets the TTFs and embeds them in assets/fonts.css
+tools/cut_layers.py     isolates the four hero elements out of their frames
+tools/build_hero_layers.py  encodes the five hero layers as WebP at two widths
+tools/build_foreground.py   cuts the four foreground pieces out of the rock
 tools/fonts-src/        source TTFs and their OFL licences
+masters/                full-size cut-outs, gitignored working files
 ```
 
 ## Rebuilding the assets
@@ -68,27 +70,37 @@ pip install pillow numpy
 python tools/build_assets.py
 ```
 
-`build_assets.py` keys the logo off its studio background, grades the foreground cut-outs into the hero plate's dusk and re-embeds the fonts. Each step needs its own source under `images/`; a step whose source is missing is skipped with a note instead of failing the run.
+`build_assets.py` keys the logo off its studio background. Each step needs its own source under `images/`; a step whose source is missing is skipped with a note instead of failing the run.
 
 **The logo source is not in the repository.** `images/logo.jpeg` was never committed, so `assets/img/vajradhan-logo.webp`, `vajradhan-logo-64.png` and `favicon.png` cannot be rebuilt — the committed files are the only copy. Put it back under `images/` and the step runs again.
 
-The cut-outs' own originals are gone too, so the first build's moonlit output was kept as their source (`images/cutout-6..9.webp`); the grade now carries those into the hero plate's dusk.
+## The foreground
 
-`build_hero.py` cuts `images/vajradhan11.png` into the five depth planes along hand-traced lines (skyline, horizon haze, city, road), filling the area behind each one so the parallax never shows a doubled edge. Pass `--png` to write transparent PNGs beside the webp plates.
+```bash
+python tools/build_foreground.py        # needs masters/3-cutout.png
+```
 
-Generated images follow the project naming: `vajradhan11-*` (planes of the hero plate), `vajradhan6–9` (cut-outs), `vajradhan-logo`.
+Each section carries a piece of rock at its foot — `fg-ridge`, `fg-spire`, `fg-shards`, `fg-drift` — which rises in as the section takes the viewport and drifts against the scene behind it. All four are cut from the lava-seamed rock the cloaked man stands on, so they share the scene's light without grading.
 
-## The studio film
+The asteroids are not found in the frame: the debris floating in it is barely a hundred pixels across. They are cut — a jagged outline from a fixed seed, filled with rock sampled from the master and falling away at the rim. Because these ride *in front of* each section's copy, every piece goes through a highlight rolloff that compresses the lava seams; the embers stay, they just stop shouting over the text.
 
-`assets/videos/vajradhan1.mp4` is the file as delivered: **HEVC (hvc1)**, 1918x1080, 60 fps, 10.1 s, 17.35 MB. It is not re-encoded.
+## The hero layers
 
-Two things follow from that, and both want a decision before launch:
+```bash
+python tools/cut_layers.py          # 3, then 1, 2, 4 -> masters/*-cutout.png
+python tools/build_hero_layers.py   # -> assets/img/hero-*-{1920,960}.webp
+```
 
-- **HEVC only plays where the operating system provides a decoder.** Chrome and Edge lean on the OS for it, Safari has it, and Firefox does not support it at all. A visitor whose machine cannot decode it sees the card with nothing in it.
-- **There is no poster frame yet**, which is exactly what would cover that case. It needs one frame exported as WebP; ffmpeg is the usual way.
+`cut_layers.py` isolates the four elements out of their frames, in three modes, because the frames are not alike:
 
-The `<video>` is muted, looped, inline, `preload="metadata"`, without controls, and is started and stopped by an IntersectionObserver so nothing decodes off-screen.
+- **dark** (`3.jpeg`) — a cloaked figure on a lava-seamed rock against a nebula. Colour cannot separate them: the cloak's lit folds and the sky behind are the same pink. What can is that the subject is a dark mass against a sky that stays smooth at every scale, so the silhouette comes from comparing each pixel with a wide local mean, and a colour veto then drops the nebula (magenta, blue well above green) while keeping the lava and rim light (warm).
+- **glow** (`1.jpeg`, `2.jpeg`) — luminous subjects on near-black, so brightness *is* the matte. The threads and flares get their own soft edges for free; the work is in keeping only the subject, by finding the main luminous mass and fading everything beyond a soft radius of it.
+- **feather** (`4.jpeg`) — no cut at all. It is a second galaxy field, not an object, and segmenting it only halved the disc; it is screened over the plate instead, and its alpha only fades the frame's own edge away.
+
+`build_hero_layers.py` crops each cut-out to its alpha bounding box, zeroes RGB behind the transparency, and writes each layer at its own fraction of 1920 and of 960.
+
+Generated images follow the project naming: `hero-*` (the hero's layers), `fg-*` (the foreground pieces), `vajradhan-logo`.
 
 ## Placeholder content
 
-The copy is the client's own (see their handoff sheet). What is still outstanding is marked `<!-- TODO -->` in `index.html`: the business email (the contact button is inert until it exists), the Instagram and LinkedIn URLs, the WhatsApp number, the showreel and its poster, a poster frame for the studio film, approved stills for the four projects, the About stats figures, and the absolute `og:` URLs. Search for `TODO` before launch.
+The copy is the client's own (see their handoff sheet). What is still outstanding is marked `<!-- TODO -->` in `index.html`: the business email (the contact button is inert until it exists), the Instagram and LinkedIn URLs, the WhatsApp number, the showreel and its poster, approved stills for the four projects, the About stats figures, and the absolute `og:` URLs. Search for `TODO` before launch.
