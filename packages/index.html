@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vajradhan</title>
+<meta name="description" content="Vajradhan production and post-production packages: on-location shoot and reel production, and remote editing-led delivery, each with clear deliverables and a fixed price.">
+<meta name="theme-color" content="#0a0e15">
+<!-- TODO: og:image / og:url want absolute URLs — add them, as <host>/packages/, once the
+     site has its final address. The canonical below is relative, which resolves to the
+     same extensionless form at any depth and under a project subpath. -->
+<link rel="canonical" href="./">
+<link rel="icon" type="image/png" href="../favicon.png">
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/site.css">
+<style>
+/* =============================================== packages · page-specific
+   The closing band arrives in the stage after this.
+
+   The band is the hero's frame at 62% of it, and the copy inside it is the
+   hero's copy block: .band-copy, .band h1 and .band-sub are the same rules
+   the hero uses, shared from site.css, so the two pages open the same way at
+   two heights. The scrims are the hero's two, unchanged. */
+.band{ position:relative; min-height:62svh; padding:0 var(--pad);
+  display:flex; flex-direction:column; justify-content:flex-end; }
+.band-copy{ padding-bottom:clamp(26px,5.6vh,70px); }
+.band .eyebrow{ display:block; margin-bottom:clamp(14px,2vh,26px); }
+/* Michroma is very wide, and the hero's 48% measure breaks this heading over
+   four lines in a band only 62svh tall. Above the 1080 breakpoint the band
+   takes the work cards' measure instead, which holds it to two; below it the
+   shared rule already narrows the copy and the heading wraps as the hero's
+   does. */
+@media (min-width:1081px){ .band-copy{ max-width:min(1100px,100%); } }
+
+/* The hero's foot scrim ends at the fold, where nothing follows it. This band
+   ends mid-screen, so the same rule would leave a hard horizontal edge with
+   open sky under it. The scrim runs on past the band instead and fades out,
+   handing over to the section scrim on its way in. */
+.band::after{ content:''; position:absolute; left:0; right:0; top:46%; bottom:-20vh; pointer-events:none;
+  background:linear-gradient(transparent, rgba(8,10,14,.52) 34%, rgba(8,10,14,.80) 58%,
+    rgba(8,10,14,.52) 80%, transparent); z-index:0; }
+.band::before{ content:''; position:absolute; inset:0; pointer-events:none; z-index:0;
+  background:linear-gradient(104deg, rgba(8,10,14,.80) 0%, rgba(8,10,14,.58) 26%,
+    rgba(8,10,14,.24) 46%, transparent 62%); }
+@media (max-aspect-ratio: 19/20){
+  /* upright, the raking scrim becomes a full cover, so it needs the same
+     tail as the foot one or it ends on a line of its own */
+  .band::before{ inset:0 0 -20vh;
+    background:linear-gradient(rgba(8,10,14,.58), rgba(8,10,14,.70) 36%, rgba(8,10,14,.80) 62%,
+      rgba(8,10,14,.52) 82%, transparent); }
+}
+.band > *{ position:relative; z-index:2; }
+
+/* ------------------------------------------------------------- the cards
+   Every card is a .plate: same box, same hairline grid, same hover lean,
+   same accent wash and foot bar. Only two things are new, and both were
+   missing from the component rather than restyled -- the price block and
+   the label-and-value rows. Every value below already exists elsewhere on
+   the site. */
+.pk-card h3{ font-size:clamp(22px,2.4vw,34px); }
+/* the price: the second-loudest thing on the card, after the name */
+.pk-price{ margin:0; font-family:var(--font-mono); font-size:clamp(15px,1.3vw,20px);
+  font-weight:700; letter-spacing:.12em; color:#fff; }
+.pk-price small{ display:block; margin-top:6px; font-family:var(--font-mono); font-size:10px;
+  font-weight:400; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); }
+/* the deliverables: .plate's own list, turned from a tag row into rows of
+   label and value. It keeps the component's mono, size, tracking and colour. */
+.pk-list{ flex-direction:column; gap:0; padding:0; }
+.pk-list li{ display:flex; align-items:baseline; justify-content:space-between; gap:18px;
+  padding:10px 0; border-bottom:1px solid var(--line-soft); }
+.pk-list li:first-child{ padding-top:14px; }
+.pk-list .v{ color:var(--bone); text-align:right; }
+.pk-card .cta{ margin-top:18px; align-self:flex-start; }
+
+/* Vajra Cinema is the one tier the brief calls premium. Three resting
+   distinctions, no claim among them: a larger name, that name a shade
+   brighter, and more air down the deliverables list. The scale and the air
+   carry it.
+
+   All three are styles the card simply has. Nothing here touches the wash,
+   the foot bar, the 8px lean or the button -- every one of those is a state
+   the card enters under the cursor, and holding any of them on at rest is
+   what made this card read as permanently hovered. The button is the plain
+   .cta, identical to the other four, and fills only on hover.
+
+   Every other card's name already computes to --bone, inherited from body,
+   so the brighter step here is #fff. */
+.pk-card--lead h3{ font-size:clamp(24px,3.2vw,44px); color:#fff; }
+.pk-card--lead .pk-list li{ padding:18px 0; }
+
+/* Three across for the online tiers. Declared above the 820 breakpoint only,
+   so the shared rule that stacks .plates on a phone still wins there. */
+@media (min-width:821px){
+  .plates--three{ grid-template-columns:repeat(3,minmax(0,1fr)); }
+  /* two of the three names wrap at this column width and one does not, which
+     would step the prices out of line down the row. The name reserves two of
+     its own lines so every price starts level. */
+  .plates--three .pk-card h3{ min-height:2.8em; }
+}
+
+/* Vajra Signature is unfinished by instruction: priced above Vajra Edit Pro
+   with no differentiator stated anywhere. The dashed edge is the one dashed
+   border on the site, and it is here so the gap is impossible to miss. */
+.pk-card--open{ border:1px dashed var(--line); }
+.pk-confirm{ margin:auto 0 0; padding:14px 0 0; border-top:1px solid var(--line-soft);
+  font-family:var(--font-mono); font-size:11px; line-height:1.7; letter-spacing:0;
+  color:var(--bone-dim); }
+
+/* ----------------------------------------------------------- the closing band
+   Two buttons and nothing else, centred in the section's own air. */
+.pk-actions{ display:flex; flex-wrap:wrap; justify-content:center;
+  gap:clamp(14px,2vw,34px); }
+.pk-actions .cta{ margin-top:0; }
+
+/* This page has five waypoints to the home page's six, so its walk ends on
+   the contact pose rather than the footer one, and the figure of light is at
+   full brightness exactly where the footer copy sits.
+
+   The footer scrim could not fix that on its own: .foot sits outside .page,
+   so it has no stacking context of its own and its z-index:-1 ::before
+   paints *under* the fixed canvas. Section scrims work because .sec is
+   inside .page, which is a stacking context. `isolation` gives the footer
+   one too, so its scrim lands on the scene instead of behind it, and the
+   gradient is then deepened to carry this page's much brighter frame.
+   TODO: the same is true of the home page's footer -- the scrim is simply
+   not needed there yet. Worth fixing in the shared layer rather than here. */
+.foot{ isolation:isolate; }
+.foot::before{ background:linear-gradient(rgba(8,11,17,.34), rgba(8,11,17,.80) 26%,
+  rgba(8,11,17,.95) 52%, rgba(8,11,17,.98)); }
+
+/* These section labels run longer than any on the home page, so upright they
+   collide across the rule. Each takes a line instead. */
+@media (max-width:560px){
+  #offline .sec-head, #online .sec-head{ display:grid; gap:6px; }
+  #offline .sec-head .rule, #online .sec-head .rule{ display:none; }
+}
+</style>
+</head>
+<!-- data-scene holds the pointer parallax and the idle drift back to just
+     over half strength: the same world as the home page, not competing with
+     it. 1 is the landing page's own setting. -->
+<body data-scene="0.55">
+
+<canvas id="gl" aria-hidden="true"></canvas>
+<!-- the no-WebGL scene: the same layers, stacked in CSS; loaded only if shown -->
+<div class="fb-stack" aria-hidden="true">
+  <img class="fb-plate"  alt="" width="1920" height="1072" loading="lazy" decoding="async" sizes="100vw"
+       src="../assets/img/hero-plate-1920.webp"
+       srcset="../assets/img/hero-plate-960.webp 960w, ../assets/img/hero-plate-1920.webp 1920w">
+  <img class="fb-galaxy" alt="" width="653" height="365" loading="lazy" decoding="async" sizes="114vw"
+       src="../assets/img/hero-galaxy-1920.webp"
+       srcset="../assets/img/hero-galaxy-960.webp 326w, ../assets/img/hero-galaxy-1920.webp 653w">
+  <img class="fb-iris"   alt="" width="883" height="502" loading="lazy" decoding="async" sizes="46vw"
+       src="../assets/img/hero-iris-1920.webp"
+       srcset="../assets/img/hero-iris-960.webp 442w, ../assets/img/hero-iris-1920.webp 883w">
+  <img class="fb-figure" alt="" width="768" height="1428" loading="lazy" decoding="async" sizes="22vw"
+       src="../assets/img/hero-figure-1920.webp"
+       srcset="../assets/img/hero-figure-960.webp 384w, ../assets/img/hero-figure-1920.webp 768w">
+  <img class="fb-ring"   alt="" width="653" height="365" loading="lazy" decoding="async" sizes="114vw"
+       src="../assets/img/hero-galaxy-1920.webp"
+       srcset="../assets/img/hero-galaxy-960.webp 326w, ../assets/img/hero-galaxy-1920.webp 653w">
+  <i class="fb-head" aria-hidden="true"></i>
+  <img class="fb-rock"   alt="" width="998" height="581" loading="lazy" decoding="async" sizes="56vw"
+       src="../assets/img/hero-rock-1920.webp"
+       srcset="../assets/img/hero-rock-960.webp 499w, ../assets/img/hero-rock-1920.webp 998w">
+</div>
+<div id="vignette" aria-hidden="true"></div>
+<div class="cur-dot" id="cursor" aria-hidden="true"></div>
+
+<!-- ============================================================ preloader -->
+<div id="pre" role="status" aria-live="polite">
+  <div class="pre-in">
+    <img class="pre-mark" src="../assets/img/vajradhan-logo.webp" alt="" width="640" height="507" loading="lazy" decoding="async">
+    <div class="pre-word" aria-hidden="true">VAJRADHAN</div>
+    <div class="pre-bar"><i id="pre-fill"></i></div>
+    <div class="pre-meta">
+      <span id="pre-step">Loading</span><b><span id="pre-pct">0</span>%</b>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ nav
+     The menu is the home page's, with 06 Packages added on both. Here the
+     other five point back to the home page's anchors and this one is the
+     page you are on. -->
+<header class="nav" id="nav">
+  <a class="brand" href="../" data-cursor aria-label="Vajradhan — home">
+    <img src="../assets/img/vajradhan-logo.webp" alt="" width="640" height="507" loading="lazy" decoding="async">
+    <b aria-hidden="true">VAJRADHAN</b>
+  </a>
+  <button class="nav-burger" id="burger" type="button" aria-label="Open menu" aria-controls="menu" aria-expanded="false" data-cursor><i></i><i></i></button>
+</header>
+<nav class="menu" id="menu" aria-label="Site">
+  <a class="mlink" href="../#about" data-cursor><span>01</span><b>About</b></a>
+  <a class="mlink" href="../#capabilities" data-cursor><span>02</span><b>Capabilities</b></a>
+  <a class="mlink" href="../#work" data-cursor><span>03</span><b>Work</b></a>
+  <a class="mlink" href="../#process" data-cursor><span>04</span><b>Process</b></a>
+  <a class="mlink" href="../#contact" data-cursor><span>05</span><b>Contact</b></a>
+  <a class="mlink" href="./" aria-current="page" data-cursor><span>06</span><b>Packages</b></a>
+  <p class="menu-foot">
+    <a class="cta" href="../#contact" data-cursor data-press>
+      <i aria-hidden="true"></i><span>Start a Project</span>
+      <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
+    </a>
+  </p>
+</nav>
+<div class="scrim" id="scrim" aria-hidden="true"></div>
+
+<main class="page" id="top">
+
+<!-- ============================================================ header band
+     The eyebrow, the word-revealed heading and the standfirst. -->
+<section class="band" id="head" data-cam="0" data-rail="Top" aria-labelledby="pk-title">
+  <div class="band-copy">
+    <span class="eyebrow" data-rv="fade">Packages &amp; Pricing</span>
+    <h1 class="display" id="pk-title" data-rv="up">Choose your production level.</h1>
+    <p class="band-sub" data-rv="up">From focused reel production to full cinematic post-production, every
+      Vajradhan package is built around clear deliverables and a deliberate visual standard.</p>
+  </div>
+</section>
+
+<!-- ============================================================ offline
+     Vajra Frame and Vajra Cinema. The cards are .plate, the capabilities
+     component, with a price block and label-and-value rows added.
+     TODO: "Choose Package" goes to the contact section, which is itself
+     inert until the client supplies a business email. Once there is a real
+     address or form, each button should carry its package name with it. -->
+<section class="sec" id="offline" data-cam="1" data-rail="On-location" aria-labelledby="offline-title">
+  <div class="sec-head" data-rv="fade">
+    <span class="k"><b>01</b> — On-location Production</span><span class="rule"></span><span class="k">Offline Packages</span>
+  </div>
+  <div class="split-head">
+    <h2 class="display h-sec" id="offline-title" data-rv="up">On-location production.</h2>
+    <p class="body-lg" data-rv="up">Production-led packages for shoots where Vajradhan handles the
+      on-location capture and reel deliverables.</p>
+  </div>
+
+  <div class="plates">
+    <article class="plate pk-card" data-rv="up" aria-labelledby="pk-frame">
+      <h3 id="pk-frame">Vajra Frame</h3>
+      <p class="pk-price">₹14,999<small>per package</small></p>
+      <p>A clean, accessible entry package for clients who need on-location reel production with
+        supporting content.</p>
+      <ul class="pk-list">
+        <!-- TODO: client to confirm what "Post" refers to -->
+        <li><span class="l">Reels</span><span class="v">12</span></li>
+        <li><span class="l">Post</span><span class="v">10</span></li>
+        <li><span class="l">AI Videos</span><span class="v">2 complimentary</span></li>
+        <li><span class="l">Stories</span><span class="v">3 complimentary</span></li>
+        <li><span class="l">Revisions</span><span class="v">1</span></li>
+      </ul>
+      <a class="cta" href="../#contact" data-cursor data-press>
+        <i aria-hidden="true"></i><span>Choose Package</span>
+        <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
+      </a>
+      <i class="bar" aria-hidden="true"></i>
+    </article>
+
+    <article class="plate pk-card pk-card--lead" data-rv="up" aria-labelledby="pk-cinema">
+      <h3 id="pk-cinema">Vajra Cinema</h3>
+      <p class="pk-price">₹21,699<small>per package</small></p>
+      <p>A higher-tier production package built around a larger reel volume and a more complete
+        post-production treatment.</p>
+      <ul class="pk-list">
+        <li><span class="l">Reels</span><span class="v">18</span></li>
+        <li><span class="l">AI Videos</span><span class="v">4 complimentary</span></li>
+        <li><span class="l">Stories</span><span class="v">6 complimentary</span></li>
+        <li><span class="l">Revisions</span><span class="v">2</span></li>
+        <li><span class="l">Editing Treatment</span><span class="v">Colour grading, SFX, quality
+          enhancement and text captions</span></li>
+      </ul>
+      <a class="cta" href="../#contact" data-cursor data-press>
+        <i aria-hidden="true"></i><span>Choose Package</span>
+        <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
+      </a>
+      <i class="bar" aria-hidden="true"></i>
+    </article>
+  </div>
+</section>
+
+<!-- ============================================================ online
+     STAGE 4: Vajra Edit, Vajra Edit Pro and Vajra Signature, three across. -->
+<section class="sec" id="online" data-cam="2" data-rail="Remote post" aria-labelledby="online-title">
+  <div class="sec-head" data-rv="fade">
+    <span class="k"><b>02</b> — Remote Post-production</span><span class="rule"></span><span class="k">Online Packages</span>
+  </div>
+  <div class="split-head">
+    <h2 class="display h-sec" id="online-title" data-rv="up">Remote post-production.</h2>
+    <p class="body-lg" data-rv="up">Editing-led packages where the client supplies the source footage
+      and Vajradhan handles post-production remotely.</p>
+  </div>
+
+  <div class="plates plates--three">
+    <article class="plate pk-card" data-rv="up" aria-labelledby="pk-edit">
+      <h3 id="pk-edit">Vajra Edit</h3>
+      <p class="pk-price">₹7,299<small>per package</small></p>
+      <p>Essential remote delivery based on the Vajra Frame quantity structure.</p>
+      <ul class="pk-list">
+        <!-- TODO: client to confirm what "Post" refers to -->
+        <li><span class="l">Reels</span><span class="v">12</span></li>
+        <li><span class="l">Post</span><span class="v">10</span></li>
+        <li><span class="l">AI Videos</span><span class="v">2 complimentary</span></li>
+        <li><span class="l">Stories</span><span class="v">3 complimentary</span></li>
+        <li><span class="l">Revisions</span><span class="v">1</span></li>
+      </ul>
+      <a class="cta" href="../#contact" data-cursor data-press>
+        <i aria-hidden="true"></i><span>Choose Package</span>
+        <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
+      </a>
+      <i class="bar" aria-hidden="true"></i>
+    </article>
+
+    <article class="plate pk-card" data-rv="up" aria-labelledby="pk-editpro">
+      <h3 id="pk-editpro">Vajra Edit Pro</h3>
+      <p class="pk-price">₹9,999<small>per package</small></p>
+      <p>Enhanced remote editing using the Vajra Cinema quantity structure.</p>
+      <ul class="pk-list">
+        <li><span class="l">Reels</span><span class="v">18</span></li>
+        <li><span class="l">AI Videos</span><span class="v">4 complimentary</span></li>
+        <li><span class="l">Stories</span><span class="v">6 complimentary</span></li>
+        <li><span class="l">Revisions</span><span class="v">2</span></li>
+        <li><span class="l">Editing Treatment</span><span class="v">Colour grading, SFX, quality
+          enhancement and text captions</span></li>
+      </ul>
+      <a class="cta" href="../#contact" data-cursor data-press>
+        <i aria-hidden="true"></i><span>Choose Package</span>
+        <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
+      </a>
+      <i class="bar" aria-hidden="true"></i>
+    </article>
+
+    <!-- Drawn as visibly unfinished on purpose: it is priced above Vajra Edit
+         Pro with no stated differentiator, and the dashed border and the panel
+         below are there so that gap cannot be shipped by accident. No list is
+         copied in from the other tiers and nothing is invented. -->
+    <article class="plate pk-card pk-card--open" data-rv="up" aria-labelledby="pk-signature">
+      <h3 id="pk-signature">Vajra Signature</h3>
+      <p class="pk-price">₹13,999<small>per package</small></p>
+      <p>The highest remote post-production tier.</p>
+      <!-- TODO -->
+      <p class="pk-confirm">[VAJRADHAN TO CONFIRM: at least one Signature-only benefit — higher edit
+        complexity, priority turnaround, or an additional revision.]</p>
+      <a class="cta" href="../#contact" data-cursor data-press>
+        <i aria-hidden="true"></i><span>Discuss This Tier</span>
+        <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
+      </a>
+      <i class="bar" aria-hidden="true"></i>
+    </article>
+  </div>
+</section>
+
+<!-- ============================================================ closing
+     The brief supplies two button labels for this band and no heading, so
+     there is no heading: a line here would be invented copy on a pricing
+     page. The band is .sec, so it carries the section's own vertical air.
+     TODO: a closing line above these two buttons, if the client wants one. -->
+<section class="sec pk-close" id="talk" data-cam="3" data-rail="Discuss">
+  <div class="pk-actions" data-rv="up">
+    <a class="cta" href="../#contact" data-cursor data-press>
+      <i aria-hidden="true"></i><span>Discuss Your Project</span>
+      <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
+    </a>
+    <a class="cta" href="../#contact" data-cursor data-press>
+      <i aria-hidden="true"></i><span>Book a Shoot</span>
+      <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
+    </a>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================================================ footer -->
+<footer class="foot" data-cam="4" data-rail="Footer">
+  <div class="foot-grid">
+    <div class="foot-brand" data-rv="up">
+      <img src="../assets/img/vajradhan-logo.webp" alt="Vajradhan" width="640" height="507" loading="lazy" decoding="async">
+      <div class="foot-lines">
+        <p>Independent Filmmaking &amp; Visual Production Studio</p>
+        <p class="foot-keys">Stories &bull; Visuals &bull; Impact</p>
+      </div>
+    </div>
+    <div data-rv="up"><h4>Studio</h4><ul>
+      <li><a href="../#about" data-cursor>About</a></li>
+      <li><a href="../#capabilities" data-cursor>Capabilities</a></li>
+      <li><a href="../#work" data-cursor>Work</a></li>
+      <li><a href="../#process" data-cursor>Process</a></li>
+      <li><a href="../#contact" data-cursor>Contact</a></li>
+    </ul></div>
+    <!-- TODO: the three below stay as text until the client supplies the
+         Instagram and LinkedIn URLs and the business email; each then becomes a
+         link, like the Studio column above it. -->
+    <div data-rv="up"><h4>Connect</h4><ul>
+      <li>Instagram</li>
+      <li>LinkedIn</li>
+      <li>Email</li>
+    </ul></div>
+  </div>
+  <div class="foot-base" data-rv="fade">
+    <span>© 2026 Vajradhan Production. All rights reserved.</span>
+  </div>
+</footer>
+
+<nav class="rail" id="rail" aria-label="Sections"></nav>
+
+<script src="../vendor/three.min.js"></script>
+<script src="../assets/site.js"></script>
+</body>
+</html>

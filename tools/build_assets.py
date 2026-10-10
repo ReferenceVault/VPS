@@ -3,9 +3,8 @@ Vajradhan asset build.
 
 Regenerates the logo under assets/ from its source in images/. The other
 generated assets have their own scripts: tools/build_fonts.py for the faces,
-tools/cut_layers.py and tools/build_hero_layers.py for the hero's layers, and
-tools/build_foreground.py for the rock pieces that ride at the foot of each
-section. Run from the repository root:
+and tools/cut_layers.py with tools/build_hero_layers.py for the hero's
+layers. Run from the repository root:
 
     python tools/build_assets.py
 

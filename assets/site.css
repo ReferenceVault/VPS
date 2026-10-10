@@ -1,0 +1,430 @@
+/* =====================================================================
+   VAJRADHAN · the shared layer.
+
+   Everything both pages are built from: the tokens, the reset, the type
+   scale, the reveal utilities, the nav and its menu sheet, the section
+   scrim, the .plate the cards are built on, the button, the footer, the
+   progress rail, the cursor and the no-WebGL
+   fallback. Page-specific rules stay inline in the page that owns them,
+   after this file, so they win on equal specificity.
+
+   Every rule here is verbatim from index.html's original inline block. The
+   three responsive media queries were the one place home-only and shared
+   rules sat together; those were dealt out between the two files by hand,
+   declaration for declaration.
+   ===================================================================== */
+
+/* ============================================================= tokens
+   Measured, not invented: the night comes off the vortex plate (mean
+   89·82·79, top band 56·57·56, corners 45·44·44), the accent and ember off
+   the logo's crystal eye. The page black and the type greys are the
+   studio's own, and are not read off the photograph.                     */
+:root{
+  --ink:#0a0e15;          /* page black, a shade under the plate's top     */
+  --ink-2:#111823;
+  --night:#413e3f;        /* the cloud at the top of the frame             */
+  --bone:#e4ebf0;         /* moonlight white — all primary type            */
+  --bone-dim:#b2c0cc;     /* the moon's own grey-blue                      */
+  --muted:#7c8794;
+  --line:rgba(228,235,240,.14);
+  --line-soft:rgba(228,235,240,.07);
+  --accent:#d4299b;       /* the eye's magenta                             */
+  --ember:#ff8a3d;        /* the iris                                      */
+  /* Three faces, each with one job. Michroma has a single weight and very
+     wide letterforms, so display hierarchy comes from size, tracking and
+     colour -- never from a heavier cut, which the browser would have to fake. */
+  --font-display:'Michroma','Space Grotesk',system-ui,sans-serif;
+  --font-body:'Space Grotesk',system-ui,-apple-system,'Segoe UI','Helvetica Neue',sans-serif;
+  --font-mono:'Space Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --pad:clamp(20px, 3.2vw, 64px);
+  --nav-h:88px;
+  /* Durations are not tokens, but they are a scale, and everything on the
+     page sits on it: .35s for colour and small state, .5s for anything the
+     pointer moves, .7s for a panel or a sweep. Entrances run .9s opacity and
+     1.05s transform. */
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --ease-out:cubic-bezier(.16,1,.3,1);
+  --ease-io:cubic-bezier(.65,0,.35,1);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{ -webkit-text-size-adjust:100%; scroll-behavior:auto; background:var(--ink);
+  overscroll-behavior-y:none; /* no rubber-band: the fixed canvas and the page would part */ }
+body{
+  margin:0; background:var(--ink); color:var(--bone);
+  font-family:var(--font-body);
+  font-weight:400; font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;
+}
+body.is-locked{ overflow:hidden; height:100vh; }
+::selection{ background:var(--accent); color:#fff; }
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+button.cta{ border:1px solid var(--line); padding:17px 30px; }
+:focus-visible{ outline:1px solid var(--accent); outline-offset:4px; }
+/* keyboard gets what the pointer gets */
+.menu a.mlink:focus-visible{ color:#fff; }
+.menu a.mlink:focus-visible > *{ transform:translate3d(10px,0,0); }
+.chip:focus-visible .num{ color:var(--ember); transform:translate3d(0,-2px,0); }
+.chip:focus-visible b{ color:#fff; }
+.arrowlink:focus-visible .ar{ background:var(--bone); border-color:var(--bone); }
+.arrowlink:focus-visible .ar svg path{ stroke:var(--ink); }
+.cta:focus-visible{ color:var(--ink); border-color:var(--bone); }
+.cta:focus-visible i{ transform:none; }
+.cta:focus-visible svg path{ stroke:var(--ink); }
+.foot li a:focus-visible{ color:var(--bone); }
+.rail button:focus-visible i{ transform:none; background:var(--bone-dim); }
+.brand:focus-visible img{ transform:scale(1.05); }
+
+/* ============================================================= layers */
+#gl{
+  position:fixed; inset:0; width:100%; height:100%;
+  display:block; z-index:0; background:var(--night);
+}
+/* Grain lives in the post shader (uGrain); a full-screen overlay-blended layer
+   on top of it cost a whole-screen blend every frame for no visible gain. */
+#vignette{
+  position:fixed; inset:0; z-index:55; pointer-events:none;
+  background:radial-gradient(125% 95% at 50% 42%, transparent 44%, rgba(4,6,10,.5) 100%);
+}
+.page{ position:relative; z-index:10; }
+
+/* Horizontal overflow is stopped where it starts, not papered over at the
+   root. Every block that holds something built to hang past the frame — the
+   cut-out planes — clips its own x axis. `clip` (unlike
+   `hidden`) makes no scroll container, so vertical bleed and sticky
+   behaviour survive and nothing has to measure the viewport by hand. */
+.hero, .sec, .foot{ overflow-x:clip; overflow-y:visible; }
+
+/* ============================================================= type */
+/* Space Mono carries every small mark: eyebrows, numbers, buttons, metadata.
+   Always uppercase, always tracked, never a paragraph. */
+.eyebrow{
+  font-family:var(--font-mono);
+  font-size:12px; font-weight:400; letter-spacing:.34em; text-transform:uppercase;
+  color:var(--bone-dim); text-shadow:0 1px 16px rgba(4,6,10,.9);
+}
+h1,h2,h3{ font-weight:400; margin:0; letter-spacing:-.008em; }
+/* Michroma sets every display line: uppercase, tracked open rather than
+   tightened, and at one weight. The old negative tracking belonged to a
+   narrower face and would collide these letterforms. */
+.display{
+  font-family:var(--font-display);
+  text-transform:uppercase; line-height:1.26; letter-spacing:.02em;
+  font-weight:400; text-shadow:0 2px 34px rgba(4,6,10,.6);
+}
+.h-sec{ font-size:clamp(22px,2.4vw,34px); }
+.body-lg{ font-size:clamp(16px,1.4vw,19px); line-height:1.7; color:#bcc7d0; font-weight:300; text-shadow:0 1px 20px rgba(4,6,10,.88); }
+.body{ font-size:14px; line-height:1.7; color:#9eaab5; font-weight:400; text-shadow:0 1px 18px rgba(4,6,10,.85); }
+
+/* ============================================================= reveal */
+[data-rv]{ opacity:0; }
+[data-rv="up"]{ transform:translate3d(0,26px,0); }
+[data-rv].rv-in{ opacity:1; transform:none;
+  transition:opacity .9s var(--ease-out), transform 1.05s var(--ease-out); }
+.word-mask{ display:inline-block; overflow:hidden; vertical-align:top; padding-bottom:.04em; }
+.word{
+  display:inline-block; opacity:0; transform:translate3d(0,112%,0);
+  transition:transform .9s var(--ease-out), opacity .5s var(--ease-out);
+  transition-delay:var(--word-delay,0ms);
+}
+.word-reveal.rv-in .word{ opacity:1; transform:none; }
+/* hint only while a heading waits to reveal, so dozens of layers are not kept alive afterwards */
+.word-reveal:not(.rv-in) .word{ will-change:transform,opacity; }
+
+/* ============================================================= preloader */
+#pre{
+  position:fixed; inset:0; z-index:100; background:var(--ink);
+  display:flex; align-items:center; justify-content:center;
+  transition:opacity .7s var(--ease), visibility .7s;
+}
+#pre.done{ opacity:0; visibility:hidden; pointer-events:none; }
+.pre-in{ width:min(420px,74%); text-align:center; }
+.pre-mark{ margin:0 auto 22px; width:72px; height:auto; }
+.pre-word{ font-family:var(--font-display); font-weight:400; font-size:13px; letter-spacing:.26em;
+  color:var(--bone); margin:0 0 22px .26em; }
+.pre-bar{ position:relative; height:1px; background:rgba(228,235,240,.14); overflow:hidden; }
+.pre-bar i{ position:absolute; inset:0 100% 0 0; background:var(--bone); transition:right .35s linear; }
+.pre-meta{ display:flex; justify-content:space-between; margin-top:12px; font-family:var(--font-mono);
+  font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
+.pre-meta b{ font-weight:500; color:var(--bone-dim); font-variant-numeric:tabular-nums; }
+
+/* ============================================================= nav
+   The bar is right:0 against the viewport. Nothing on the page is allowed to
+   widen the document (see overflow-x:clip above), so the initial containing
+   block is the screen and no measured width has to be written back into CSS. */
+.nav{
+  position:fixed; top:0; left:0; right:0; height:var(--nav-h); z-index:50;
+  display:flex; align-items:center; justify-content:space-between; gap:24px; padding:0 var(--pad);
+  transition:transform .5s var(--ease), opacity .7s var(--ease-out);
+}
+/* The bar waits for the curtain rather than sitting over it, and the mark and
+   the burger follow it in. No script owns this: if the page never unlocks,
+   the nav is visible, which is the state that matters. */
+body.is-locked .nav{ opacity:0; }
+body.is-locked .brand, body.is-locked .nav-burger{ transform:translate3d(0,-6px,0); }
+.nav::before{
+  content:''; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  /* solid rather than backdrop-blurred: the canvas under the bar redraws every
+     frame, so a backdrop blur would be re-run every frame too */
+  background:linear-gradient(rgba(10,14,21,.9), rgba(10,14,21,.8));
+  opacity:0; transition:opacity .5s linear;
+}
+.nav.stuck::before{ opacity:1; }
+.nav::after{
+  content:''; position:absolute; left:var(--pad); right:var(--pad); bottom:0; height:1px;
+  background:var(--line-soft); opacity:0; transition:opacity .5s var(--ease);
+}
+.nav.stuck::after{ opacity:1; }
+.nav.hide{ transform:translate3d(0,-101%,0); }
+.brand{ display:flex; align-items:center; gap:14px; flex:0 0 auto;
+  transition:transform .7s var(--ease-out); }
+.brand img{ width:clamp(40px,3.6vw,64px); height:auto;
+  transition:transform .5s var(--ease-out); }
+.brand:hover img{ transform:scale(1.05); }
+.brand:hover b{ color:#fff; }
+.brand b{ font-family:var(--font-display); font-size:clamp(12px,.95vw,16px); font-weight:400; letter-spacing:.2em;
+  transition:color .35s var(--ease); }
+.nav-burger{ width:40px; height:24px; position:relative; flex:0 0 auto; z-index:3;
+  /* the same lift as the mark, on the short scale, so a press is instant */
+  transition:transform .35s var(--ease-out); transition-delay:.06s; }
+.nav-burger i{ position:absolute; right:0; height:1.5px; background:var(--bone);
+  transition:width .5s var(--ease-out), transform .5s var(--ease-out), top .5s var(--ease-out); }
+.nav-burger i:nth-child(1){ top:7px; width:40px; }
+.nav-burger i:nth-child(2){ top:15px; width:26px; }
+.nav-burger:hover i:nth-child(2){ width:40px; }
+.nav-burger:active{ transform:scale(.94); }
+.nav-burger:focus-visible i{ background:#fff; }
+.nav-burger[aria-expanded="true"] i:nth-child(1){ top:11px; width:30px; transform:rotate(45deg); }
+.nav-burger[aria-expanded="true"] i:nth-child(2){ top:11px; width:30px; transform:rotate(-45deg); }
+
+/* the menu sheet — the design keeps the bar to a logo and a burger at every
+   width, so the links live here on desktop too */
+.menu{
+  position:fixed; top:0; right:0; bottom:0; width:min(88%,460px); z-index:49;
+  padding:calc(var(--nav-h) + 30px) var(--pad) 36px;
+  display:flex; flex-direction:column; gap:0;
+  background:rgba(8,11,17,.97); border-left:1px solid var(--line-soft);
+  transform:translate3d(100%,0,0); visibility:hidden;
+  transition:transform .7s var(--ease-out), visibility 0s linear .7s;
+}
+.menu.open{ transform:none; visibility:visible; transition-delay:0s; }
+/* the page you are on wears, at rest, what the others take on hover. The
+   scroll-driven marker the rig sets is aria-current="true"; this one is
+   "page", so the two never collide. */
+.menu a.mlink[aria-current="page"]{ color:#fff; }
+.menu a.mlink[aria-current="page"] span{ color:var(--accent); }
+/* the links follow the sheet in, one after another */
+.menu.open a.mlink{ opacity:1; transform:none; }
+.menu.open a.mlink:nth-child(1){ transition-delay:0s, .18s, .18s; }
+.menu.open a.mlink:nth-child(2){ transition-delay:0s, .24s, .24s; }
+.menu.open a.mlink:nth-child(3){ transition-delay:0s, .30s, .30s; }
+.menu.open a.mlink:nth-child(4){ transition-delay:0s, .36s, .36s; }
+.menu.open a.mlink:nth-child(5){ transition-delay:0s, .42s, .42s; }
+.menu.open a.mlink:nth-child(6){ transition-delay:0s, .48s, .48s; }
+.menu.open .menu-foot{ opacity:1; transition-delay:.54s; }
+.menu a.mlink{
+  display:flex; align-items:baseline; gap:18px; padding:18px 0; border-bottom:1px solid var(--line-soft);
+  font-size:clamp(20px,1.8vw,26px); font-weight:300; letter-spacing:0; color:var(--bone);
+  opacity:0; transform:translate3d(20px,0,0);
+  transition:color .35s var(--ease), opacity .5s var(--ease-out), transform .5s var(--ease-out);
+}
+.menu a.mlink > *{ transition:transform .5s var(--ease-out), color .35s; }
+.menu a.mlink b{ font-weight:inherit; }
+.menu a.mlink span{ font-family:var(--font-mono); font-size:11px; letter-spacing:.2em; color:var(--muted); }
+.menu a.mlink:hover{ color:#fff; }
+.menu a.mlink:hover > *{ transform:translate3d(10px,0,0); }
+.menu a.mlink:hover span{ color:var(--accent); }
+.menu-foot{ margin-top:auto; opacity:0; transition:opacity .5s var(--ease-out); }
+.menu-foot .cta{ margin-top:0; }
+.menu-foot a{ color:var(--bone-dim); }
+.scrim{ position:fixed; inset:0; z-index:48; background:rgba(4,6,10,.5); opacity:0; visibility:hidden;
+  transition:opacity .5s, visibility 0s linear .5s; }
+.scrim.open{ opacity:1; visibility:visible; transition-delay:0s; }
+html.nav-open, html.nav-open body{ overflow:hidden; }
+/* A transform on the bar would make it the containing block for the fixed
+   sheet it sits beside; the hide transform is dropped while the menu is open. */
+html.nav-open .nav{ transform:none; transition:none; }
+
+/* ============================================================= sections */
+.sec{ position:relative; padding:clamp(96px,16vh,200px) var(--pad); }
+/* content sits above the scrim each section lays behind itself (::before, z-index -1) */
+.sec > *, .foot > *{ position:relative; z-index:2; }
+.sec::before{
+  content:''; position:absolute; inset:-22% -4%; z-index:-1; pointer-events:none;
+  /* the new plate is brighter and busier than the old one, and the right-hand
+     column of a two-column section sits well outside a scrim centred at 30%;
+     this one is wider and pulled towards the middle so both columns are read
+     against the same depth of black */
+  background:radial-gradient(132% 74% at 44% 50%, rgba(8,11,17,.88), rgba(8,11,17,.70) 46%, rgba(8,11,17,.26) 78%, rgba(8,11,17,0));
+  -webkit-mask-image:linear-gradient(transparent, #000 44%);
+          mask-image:linear-gradient(transparent, #000 44%);
+}
+.foot::before{
+  content:''; position:absolute; inset:-38% 0 0; z-index:-1; pointer-events:none;
+  background:linear-gradient(rgba(8,11,17,0), rgba(8,11,17,.62) 28%, rgba(8,11,17,.95) 56%, rgba(8,11,17,.98));
+}
+.sec-head{ display:flex; align-items:baseline; gap:16px; margin-bottom:clamp(30px,5vh,66px); }
+.sec-head .k{ font-family:var(--font-mono); font-size:12px; font-weight:400; letter-spacing:.34em; text-transform:uppercase; color:var(--muted); }
+.sec-head .k b{ color:var(--accent); font-weight:500; }
+.rule{ flex:1 1 auto; height:1px; background:var(--line-soft); }
+
+/* — capabilities: four plates, two by two */
+.split-head{ display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1fr); gap:clamp(28px,5vw,90px); align-items:end; margin-bottom:clamp(34px,6vh,72px); }
+.split-head h2{ max-width:19ch; }
+.split-head p{ margin:0; max-width:48ch; }
+.plates{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1px; background:var(--line-soft); border:1px solid var(--line-soft); }
+.plate{ position:relative; display:flex; flex-direction:column; gap:14px; min-height:280px; padding:clamp(22px,2.4vw,36px);
+  background:rgba(10,14,21,.84); overflow:hidden; contain:paint; }
+.plate > :not(.bar){ transition:transform .5s var(--ease-out), color .35s var(--ease); }
+.plate::before{ content:''; position:absolute; inset:0; pointer-events:none; opacity:0;
+  background:linear-gradient(145deg, rgba(212,41,155,.14), transparent 58%); transition:opacity .5s var(--ease); }
+.plate:hover::before{ opacity:1; }
+.plate:hover > :not(.bar){ transform:translate3d(8px,0,0); }
+.plate .k{ font-family:var(--font-mono); font-size:11px; letter-spacing:.16em; color:var(--muted); }
+.plate:hover .k{ color:var(--accent); }
+.plate h3{ font-family:var(--font-display); font-size:clamp(14px,1.25vw,19px); font-weight:400;
+  letter-spacing:.1em; text-transform:uppercase; line-height:1.4; }
+.plate p{ margin:0; max-width:42ch; font-size:14px; line-height:1.7; color:#9ba7b2; }
+.plate ul{ list-style:none; margin:auto 0 0; padding:14px 0 0; display:flex; flex-wrap:wrap; gap:8px 18px;
+  border-top:1px solid var(--line-soft); font-family:var(--font-mono); font-size:10px; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--bone-dim); }
+.plate .bar{ position:absolute; left:0; bottom:0; height:1px; width:100%; background:var(--accent);
+  transform:scaleX(0); transform-origin:left; transition:transform .7s var(--ease-out); }
+.plate:hover .bar{ transform:scaleX(1); }
+
+.hero-cta{ margin-top:clamp(18px,2.6vh,32px); }
+.reel-cta{ position:relative; z-index:2; margin-top:0; }
+.cta{
+  position:relative; display:inline-flex; align-items:center; gap:14px; margin-top:44px;
+  padding:17px 30px; border:1px solid var(--line); border-radius:100px; overflow:hidden; isolation:isolate;
+  font-family:var(--font-mono); font-size:11px; font-weight:400; letter-spacing:.22em; text-transform:uppercase;
+  transition:color .5s var(--ease), border-color .5s var(--ease);
+}
+.cta i{ position:absolute; inset:0; background:var(--bone); transform:translate3d(0,101%,0);
+  transition:transform .7s var(--ease-out); z-index:-1; }
+.cta:hover{ color:var(--ink); border-color:var(--bone); }
+.cta:hover i{ transform:none; }
+.cta:hover svg path{ stroke:var(--ink); }
+/* The opening copy block, which the home hero and the packages band share:
+   same width, same lift under the nav, same type sizes. */
+.hero-copy, .band-copy{ max-width:min(900px,48%); padding-top:calc(var(--nav-h) + 20px); }
+.hero h1, .band h1{ font-size:clamp(26px,4.2vw,60px); line-height:1.26; margin-bottom:clamp(14px,2vh,26px); color:#e9eef1; }
+.hero-sub, .band-sub{ font-size:clamp(16px,1.4vw,19px); line-height:1.7; font-weight:300; color:#b9c3cb; max-width:52ch; margin:0;
+  text-shadow:0 1px 26px rgba(4,6,10,.95); }
+
+/* — footer · manifesto */
+.foot{ position:relative; padding:clamp(56px,9vh,110px) var(--pad) clamp(26px,4vh,40px); }
+.foot-grid{ position:relative; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(22px,4vw,60px); }
+.foot-brand{ grid-column:1 / -1; display:grid; grid-template-columns:84px minmax(0,1fr); gap:24px; align-items:center;
+  padding-bottom:34px; margin-bottom:8px; border-bottom:1px solid var(--line-soft); }
+.foot-brand img{ width:72px; height:auto; transition:transform .7s var(--ease-out); }
+.foot-brand:hover img{ transform:scale(1.04); }
+.foot-lines{ min-width:0; }
+.foot-brand p{ margin:0; max-width:52ch; font-size:clamp(15px,1.3vw,20px); line-height:1.5; font-weight:300; color:var(--bone-dim); }
+/* specific enough to beat .foot-brand p, which sets the big line's size */
+.foot-brand .foot-keys{ margin-top:12px; font-family:var(--font-mono); font-size:10px; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--muted); }
+.foot-grid > div:nth-child(n+3){ padding-left:clamp(18px,2.2vw,34px); border-left:1px solid var(--line-soft); }
+.foot h4{ margin:0 0 16px; font-family:var(--font-mono); font-size:11px; font-weight:400; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); }
+.foot ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; }
+.foot li{ overflow:hidden; font-size:13px; color:#909ca7; }
+.foot li a{ display:inline-block; color:inherit;
+  transition:color .35s var(--ease), transform .5s var(--ease-out); }
+.foot li a:hover, .foot li a:focus-visible{ transform:translate3d(6px,0,0); }
+.foot li a:hover{ color:var(--bone); }
+.foot-base{ position:relative; display:flex; flex-wrap:wrap; gap:8px 20px; align-items:center;
+  margin-top:clamp(38px,6vh,74px); padding-top:20px; border-top:1px solid var(--line-soft);
+  font-family:var(--font-mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
+
+/* ============================================================= progress rail */
+.rail{ position:fixed; right:calc(var(--pad) - 6px); top:50%; transform:translateY(-50%); z-index:45;
+  display:flex; flex-direction:column; gap:12px; align-items:center;
+  opacity:0; visibility:hidden; transition:opacity .5s var(--ease), visibility 0s linear .5s; }
+.rail.show{ opacity:1; visibility:visible; transition-delay:0s; }
+.rail.show button{ opacity:1; transform:none; }
+.rail.show button:nth-child(2){ transition-delay:.05s; }
+.rail.show button:nth-child(3){ transition-delay:.10s; }
+.rail.show button:nth-child(4){ transition-delay:.15s; }
+.rail.show button:nth-child(5){ transition-delay:.20s; }
+.rail.show button:nth-child(6){ transition-delay:.25s; }
+.rail button{ width:24px; height:12px; display:grid; place-items:center;
+  opacity:0; transform:translate3d(8px,0,0);
+  transition:opacity .5s var(--ease-out), transform .5s var(--ease-out); }
+.rail i{ display:block; width:24px; height:1px; background:rgba(228,235,240,.26);
+  transform:scaleX(.5834); transition:transform .5s var(--ease-out), background-color .5s var(--ease-out); }
+.rail button.on i{ transform:none; background:var(--bone); }
+.rail button:hover i{ transform:none; background:var(--bone-dim); }
+
+/* ============================================================= cursor */
+.cur-dot{ position:fixed; z-index:80; top:0; left:0; width:26px; height:26px; margin:-13px 0 0 -13px;
+  border:1px solid rgba(228,235,240,.42); border-radius:50%; pointer-events:none;
+  /* position comes in through `translate` (set per frame by JS); the grow is a
+     `transform` scale, so neither ever touches layout */
+  transition:transform .35s var(--ease-out), background-color .35s, border-color .35s, opacity .3s; opacity:0; }
+.cur-dot.act{ transform:scale(2); background:rgba(228,235,240,.07); border-color:rgba(228,235,240,.36); }
+@media (hover:hover) and (pointer:fine){ .cur-dot{ opacity:1 } }
+
+/* ============================================================= fallback
+   If WebGL will not start, or is lost and not given back, the scene becomes
+   its five photographic layers stacked in plain CSS. They share one frame, so
+   one cover rule registers them exactly as the canvas would. */
+.fb-stack{ display:none; position:fixed; inset:0; z-index:0; overflow:hidden; background:var(--night); }
+.fb-stack img{ position:absolute; max-width:none; }
+/* the plate covers; the four elements sit at the anchors the WebGL scene
+   gives them, so the two versions of the hero read the same */
+.fb-stack .fb-plate { inset:0; width:100%; height:100%; object-fit:cover; object-position:50% 50%; }
+.fb-stack .fb-plate { filter:brightness(.70); }
+.fb-stack .fb-galaxy{ left:50%; top:46%; width:88vw; height:auto; translate:-50% -50%; transform:scaleX(-1);
+  mix-blend-mode:screen; opacity:.46; }
+.fb-stack .fb-ring  { left:50%; top:46%; width:88vw; height:auto; translate:-50% -50%;
+  mix-blend-mode:screen; opacity:.22; }
+.fb-stack .fb-iris  { left:50%; top:11.3%; width:21vw; height:auto; translate:-50% -50%; }
+.fb-stack .fb-figure{ left:50%; top:54.8%; height:64svh; width:auto; translate:-50% -50%; }
+.fb-stack .fb-rock  { left:50%; top:89.9%; width:68vw; height:auto; translate:-50% -50%; }
+/* the same backlight behind the head, so the fallback reads the same way */
+.fb-stack .fb-head{ position:absolute; left:50%; top:24.5%; width:26vw; aspect-ratio:1; translate:-50% -50%;
+  border-radius:50%; mix-blend-mode:screen; pointer-events:none;
+  background:radial-gradient(closest-side, rgba(226,236,250,.34), rgba(150,178,220,.10) 46%, transparent 72%); }
+@media (min-aspect-ratio: 19/20) and (max-height: 820px){
+  .fb-stack .fb-galaxy,
+  .fb-stack .fb-ring  { top:44%; width:80vw; }
+  .fb-stack .fb-iris  { top:13.2%; width:17vw; }
+  .fb-stack .fb-figure{ top:46.6%; height:54svh; }
+  .fb-stack .fb-head  { top:21.0%; width:22vw; }
+  .fb-stack .fb-rock  { top:75.9%; width:56vw; }
+}
+@media (max-aspect-ratio: 19/20){
+  .fb-stack .fb-galaxy{ top:34%; width:150vw; opacity:.6; }
+  .fb-stack .fb-ring  { display:none; }
+  .fb-stack .fb-iris  { top:9%;  width:44vw; opacity:.8; }
+  .fb-stack .fb-head  { display:none; }
+  .fb-stack .fb-figure{ top:34%; height:38svh; opacity:.38; }
+  .fb-stack .fb-rock  { display:none; }
+}
+.no-webgl #gl{ display:none; }
+.no-webgl .fb-stack{ display:block; }
+.no-webgl .sec::before{ opacity:.85; }
+
+/* ============================================================= responsive */
+@media (max-width:1080px){
+  .split-head{ grid-template-columns:1fr; gap:18px; }
+  .hero-copy, .band-copy{ max-width:min(640px,70%); }
+}
+@media (max-width:820px){
+  :root{ --nav-h:72px; }
+  .hero-copy, .band-copy{ max-width:none; }
+  .rail{ display:none; }
+  .plates{ grid-template-columns:1fr; }
+  .plate{ min-height:0; }
+  .foot-grid{ grid-template-columns:1fr; }
+  .foot-brand{ grid-column:auto; grid-template-columns:minmax(0,1fr); row-gap:16px; }
+  .foot-grid > div:nth-child(n+3){ padding-left:0; border-left:0; }
+  .foot-base{ flex-direction:column; align-items:flex-start; gap:8px; }
+}
+
+@media (prefers-reduced-motion:reduce){
+  *{ animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; }
+  [data-rv]{ opacity:1 !important; transform:none !important; }
+  .word{ opacity:1 !important; transform:none !important; }
+}
