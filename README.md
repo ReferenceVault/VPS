@@ -45,20 +45,28 @@ In the console, `__vajradhan.loseContext(1500)` drops the WebGL context and rest
 
 Every path is relative, so the site works under the `/<repo>/` subpath. The `.nojekyll` file stops Pages from running Jekyll over the files.
 
+### Clean URLs
+
+The two pages serve at `/` and `/packages/`, with no `.html` anywhere a visitor sees. That comes from the file layout alone — `packages/index.html` rather than `packages.html` — so it needs no server rewrites and works on GitHub Pages, which does not do extensionless rewriting. A request for `/packages` is redirected to `/packages/` by the host.
+
+**Paths are relative, not root-relative, and must stay that way.** Under a project subpath a root-relative `/assets/site.css` resolves to the user site's root and 404s; the relative `../assets/site.css` resolves correctly at any depth. The packages page therefore reaches everything through `../`, and links home as `../` and `../#about`. The shared script resolves the hero layers against its own URL rather than the document's, so the same code serves both depths.
+
 ## Project layout
 
 ```
-index.html              page, styles and the inline Three.js scene
+index.html              the home page, served at /
+packages/index.html     the packages page, served at /packages/
 favicon.png
+assets/site.css         the shared layer: tokens, type, nav, sections, footer
+assets/site.js          the shared scene and page wiring
 assets/fonts.css        Michroma + Space Grotesk + Space Mono, base64 woff2
-assets/img/             generated hero layers, foreground pieces and logo
+assets/img/             generated hero layers and logo
 vendor/three.min.js     Three.js r149 (MIT, see vendor/three.LICENSE)
 images/                 source images
 tools/build_assets.py   rebuilds the logo in assets/ from images/
 tools/build_fonts.py    subsets the TTFs and embeds them in assets/fonts.css
 tools/cut_layers.py     isolates the four hero elements out of their frames
 tools/build_hero_layers.py  encodes the five hero layers as WebP at two widths
-tools/build_foreground.py   cuts the four foreground pieces out of the rock
 tools/fonts-src/        source TTFs and their OFL licences
 masters/                full-size cut-outs, gitignored working files
 ```
@@ -73,16 +81,6 @@ python tools/build_assets.py
 `build_assets.py` keys the logo off its studio background. Each step needs its own source under `images/`; a step whose source is missing is skipped with a note instead of failing the run.
 
 **The logo source is not in the repository.** `images/logo.jpeg` was never committed, so `assets/img/vajradhan-logo.webp`, `vajradhan-logo-64.png` and `favicon.png` cannot be rebuilt — the committed files are the only copy. Put it back under `images/` and the step runs again.
-
-## The foreground
-
-```bash
-python tools/build_foreground.py        # needs masters/3-cutout.png
-```
-
-Each section carries a piece of rock at its foot — `fg-ridge`, `fg-spire`, `fg-shards`, `fg-drift` — which rises in as the section takes the viewport and drifts against the scene behind it. All four are cut from the lava-seamed rock the cloaked man stands on, so they share the scene's light without grading.
-
-The asteroids are not found in the frame: the debris floating in it is barely a hundred pixels across. They are cut — a jagged outline from a fixed seed, filled with rock sampled from the master and falling away at the rim. Because these ride *in front of* each section's copy, every piece goes through a highlight rolloff that compresses the lava seams; the embers stay, they just stop shouting over the text.
 
 ## The hero layers
 
@@ -99,7 +97,7 @@ python tools/build_hero_layers.py   # -> assets/img/hero-*-{1920,960}.webp
 
 `build_hero_layers.py` crops each cut-out to its alpha bounding box, zeroes RGB behind the transparency, and writes each layer at its own fraction of 1920 and of 960.
 
-Generated images follow the project naming: `hero-*` (the hero's layers), `fg-*` (the foreground pieces), `vajradhan-logo`.
+Generated images follow the project naming: `hero-*` (the hero's layers), `vajradhan-logo`.
 
 ## Placeholder content
 
