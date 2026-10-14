@@ -107,9 +107,11 @@
   color:var(--bone-dim); }
 
 /* ------------------------------------------------------------ custom work
-   Four toggles built on .plate: same box, same hover lean, same foot bar.
+   Four choices built on .plate: same box, same hover lean, same foot bar.
    Selected is the component's own wash recipe in ember, the outline the work
-   cards use, and a filled dot. Every value is one already on the site. */
+   cards use, and a filled dot. Every value is one already on the site.
+   One service at a time, so the group is a radio group and the dot reads as
+   what it looks like. */
 @media (min-width:821px){ .plates--four{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
 .svc{ min-height:0; text-align:left; gap:12px; }
 .svc h3{ margin:0; font-family:var(--font-display); font-size:clamp(13px,1.15vw,17px);
@@ -117,9 +119,9 @@
 .svc p{ margin:0; max-width:42ch; font-size:14px; line-height:1.7; color:#9ba7b2; }
 .svc .dot{ width:12px; height:12px; border:1px solid var(--line); border-radius:50%;
   transition:background-color .35s var(--ease), border-color .35s var(--ease); }
-.svc[aria-pressed="true"]{ outline:1px solid var(--ember); outline-offset:-1px;
+.svc[aria-checked="true"]{ outline:1px solid var(--ember); outline-offset:-1px;
   background:linear-gradient(145deg, rgba(255,138,61,.14), transparent 58%), rgba(10,14,21,.84); }
-.svc[aria-pressed="true"] .dot{ background:var(--ember); border-color:var(--ember); }
+.svc[aria-checked="true"] .dot{ background:var(--ember); border-color:var(--ember); }
 /* The selected outline is (0,2,0) and would otherwise outrank the global
    :focus-visible at (0,1,0), leaving a chosen tile with no visible ring.
    This matches its specificity and follows it, so focus always shows. */
@@ -382,9 +384,11 @@
 </section>
 
 <!-- ============================================================ customize
-     Four services the visitor can combine. No prices: custom work is
-     quote-only. The action is disabled until at least one tile is on, so a
-     message can never go out with an empty list.
+     Four services, one at a time. No prices: custom work is quote-only.
+     It is a radio group, not four toggles: arrow keys move and select, only
+     the chosen tile is in the tab order, and a choice cannot be taken back
+     once made — which is the radio convention and suits an action that needs
+     a service to send. The action is disabled until the first choice.
      TODO: client to approve copy — only the four names were supplied. -->
 <section class="sec" id="customize" aria-labelledby="custom-title">
   <div class="sec-head" data-rv="fade">
@@ -392,33 +396,35 @@
   </div>
   <div class="split-head">
     <h2 class="display h-sec" id="custom-title" data-rv="up">Build your own.</h2>
-    <p class="body-lg" data-rv="up">Not every project fits a package. Choose what you need and we will
-      scope it with you — pick one, or combine several.</p>
+    <!-- TODO: client to approve copy — this line replaces one that ended
+         "pick one, or combine several", which no longer describes the group. -->
+    <p class="body-lg" data-rv="up">Not every project fits a package. Choose the service you need and we
+      will scope it with you.</p>
   </div>
 
-  <div class="plates plates--four">
-    <button class="plate svc" type="button" aria-pressed="false" data-svc="Pre-wedding Shoot" data-rv="up" data-cursor>
+  <div class="plates plates--four" role="radiogroup" aria-labelledby="custom-title">
+    <button class="plate svc" type="button" role="radio" aria-checked="false" tabindex="0" data-svc="Pre-wedding Shoot" data-rv="up" data-cursor>
       <i class="dot" aria-hidden="true"></i>
       <h3>Pre-wedding Shoot</h3>
       <!-- TODO: client to approve copy -->
       <p>Cinematic films and stills ahead of the day.</p>
       <i class="bar" aria-hidden="true"></i>
     </button>
-    <button class="plate svc" type="button" aria-pressed="false" data-svc="Wedding Shoot" data-rv="up" data-cursor>
+    <button class="plate svc" type="button" role="radio" aria-checked="false" tabindex="-1" data-svc="Wedding Shoot" data-rv="up" data-cursor>
       <i class="dot" aria-hidden="true"></i>
       <h3>Wedding Shoot</h3>
       <!-- TODO: client to approve copy -->
       <p>Full-day coverage, directed and finished.</p>
       <i class="bar" aria-hidden="true"></i>
     </button>
-    <button class="plate svc" type="button" aria-pressed="false" data-svc="Personal Content" data-rv="up" data-cursor>
+    <button class="plate svc" type="button" role="radio" aria-checked="false" tabindex="-1" data-svc="Personal Content" data-rv="up" data-cursor>
       <i class="dot" aria-hidden="true"></i>
       <h3>Personal Content</h3>
       <!-- TODO: client to approve copy -->
       <p>Ongoing shoots for creators and founders.</p>
       <i class="bar" aria-hidden="true"></i>
     </button>
-    <button class="plate svc" type="button" aria-pressed="false" data-svc="Car Delivery Video" data-rv="up" data-cursor>
+    <button class="plate svc" type="button" role="radio" aria-checked="false" tabindex="-1" data-svc="Car Delivery Video" data-rv="up" data-cursor>
       <i class="dot" aria-hidden="true"></i>
       <h3>Car Delivery Video</h3>
       <!-- TODO: client to approve copy -->
@@ -429,7 +435,7 @@
 
   <div class="svc-foot" data-rv="fade">
     <div>
-      <p class="svc-count" id="svc-count" aria-live="polite">No services selected</p>
+      <p class="svc-count" id="svc-count" aria-live="polite">No service selected</p>
       <!-- TODO: client to approve copy -->
       <p class="svc-note">Custom work is quoted after a short conversation</p>
     </div>

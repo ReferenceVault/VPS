@@ -1064,38 +1064,64 @@ function wireWhatsApp() {
   });
 }
 
-/* The Customize tiles. Each is a real button carrying aria-pressed, so the
-   keyboard gets the toggle for nothing. The count and the message are both
-   rebuilt from the selection every time it changes, so neither can disagree
-   with what is on screen.
+/* The Customize group. One service at a time, so this is a radio group, not
+   four toggles: role="radio" with aria-checked, arrow keys that move and
+   select together, and a roving tabindex so Tab enters and leaves the group
+   once instead of stopping at all four.
 
-   Its action stays a button rather than becoming a link, because its target
+   A choice cannot be taken back. That is the radio convention — once
+   something is chosen, something is always chosen — and it is right here,
+   because the action has nothing to send without a service. So clicking the
+   chosen tile again leaves it chosen, and the action is disabled only up to
+   the first choice.
+
+   The count line and the message are both rebuilt from the selection every
+   time it changes, so neither can disagree with what is on screen.
+
+   The action stays a button rather than becoming a link, because its target
    changes with the selection and because it has to be genuinely inactive
-   while nothing is chosen — which an anchor cannot be. */
+   before anything is chosen — which an anchor cannot be. */
 function wireCustomize() {
   const tiles = $$('.svc');
   if (!tiles.length) return;
   const count = $('#svc-count'), go = $('#svc-go');
+  const chosen = () => tiles.find(t => t.getAttribute('aria-checked') === 'true') || null;
   const sync = () => {
-    const on = tiles.filter(t => t.getAttribute('aria-pressed') === 'true')
-                    .map(t => t.dataset.svc);
-    count.textContent = on.length
-      ? on.length + (on.length === 1 ? ' service selected' : ' services selected')
-      : 'No services selected';
-    /* With nothing chosen there is no message to build: the action is
-       inactive, so an empty list must never reach the attribute either.
+    const t = chosen(), name = t ? t.dataset.svc : '';
+    count.textContent = name ? name + ' selected' : 'No service selected';
+    /* Only the chosen tile is tabbable. With nothing chosen yet the first
+       one holds the stop, so the group is always reachable by Tab. */
+    tiles.forEach(el => el.tabIndex = (t ? el === t : el === tiles[0]) ? 0 : -1);
+    /* Before the first choice there is no message to build: the action is
+       inactive, so an empty service must never reach the attribute either.
        TODO: client to approve copy */
-    const msg = on.length
-      ? 'Hi Vajradhan \u2014 I\u2019d like a custom package. I\u2019m interested in: '
-        + on.join(', ') + '. Could we scope it?'
-      : '';
     if (!go) return;
-    go.dataset.wa = msg;
-    go.setAttribute('aria-disabled', String(!(on.length && WHATSAPP)));
+    go.dataset.wa = name
+      ? 'Hi Vajradhan — I’d like a custom package. I’m interested in '
+        + name + '. Could we scope it?'
+      : '';
+    go.setAttribute('aria-disabled', String(!(name && WHATSAPP)));
   };
-  tiles.forEach(t => t.addEventListener('click', () => {
-    t.setAttribute('aria-pressed', t.getAttribute('aria-pressed') === 'true' ? 'false' : 'true');
+  /* Selecting is always "this one and no other", so clicking what is already
+     chosen is a no-op rather than a way back to nothing. */
+  const pick = (t, focus) => {
+    tiles.forEach(el => el.setAttribute('aria-checked', String(el === t)));
     sync();
+    if (focus) t.focus();
+  };
+  tiles.forEach(t => t.addEventListener('click', () => pick(t, false)));
+  /* Arrow keys move and select in one step, which is what a radio group
+     does; the ends wrap. Space is the button's own activation and needs
+     nothing here. */
+  const STEP = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+  tiles.forEach((t, i) => t.addEventListener('keydown', e => {
+    let next = null;
+    if (e.key in STEP) next = tiles[(i + STEP[e.key] + tiles.length) % tiles.length];
+    else if (e.key === 'Home') next = tiles[0];
+    else if (e.key === 'End') next = tiles[tiles.length - 1];
+    if (!next) return;
+    e.preventDefault();
+    pick(next, true);
   }));
   if (go) go.addEventListener('click', () => {
     if (go.getAttribute('aria-disabled') === 'true') return;
