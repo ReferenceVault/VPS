@@ -1299,8 +1299,12 @@ const JOBS = [
 ];
 
 function boot() {
-  wireReveals(); wireNav(); wireHeroExit(); wireFocus(); wireCursor(); wirePress();
+  /* wireWhatsApp swaps each control for a fresh <a>, so it has to run before
+     wireReveals: the reveal observer holds element references, and a node
+     replaced after it was observed would never receive .rv-in -- it would sit
+     at opacity 0 for good. The DOM must be final before the reveals are wired. */
   wireCustomize(); wireWhatsApp();
+  wireReveals(); wireNav(); wireHeroExit(); wireFocus(); wireCursor(); wirePress();
   document.body.classList.add('is-locked');
   let i = 0;
   const step = () => {
