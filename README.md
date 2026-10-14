@@ -108,9 +108,7 @@ There are 25 of them. They fall into four groups.
 
 ### 1 · Things only you can give us
 
-**The WhatsApp number.** Every button on the site that invites someone to get in touch opens WhatsApp with a message already written for them — the package name and price if they are on a package, the services they picked if they built their own, or a general opener everywhere else. There are thirteen of these buttons across the two pages, plus the Custom Work button, which writes its message from whatever the visitor has selected.
-
-**A stand-in number is in place so the flow can be tested end to end.** It is a developer's own line, not the studio's, and it must be swapped before launch. It is a single value in one file, so changing it switches all fourteen controls over at once. Until it is changed, every enquiry made through the site reaches the developer rather than you.
+**The WhatsApp number.** Every button on the site that invites someone to get in touch opens WhatsApp with a message already written for them — the package name and price if they are on a package, the services they picked if they built their own, or a general opener everywhere else. There are thirteen of these buttons across the two pages, plus the Custom Work button, which writes its message from whatever the visitor has selected. **All fourteen are switched off until the number is supplied.** They are still visible and still reachable by keyboard, and they announce themselves as unavailable, but they do nothing. One number, entered once, turns all fourteen on.
 
 **A business email address.** The contact list on the home page is waiting for this.
 
