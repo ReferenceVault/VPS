@@ -44,7 +44,6 @@
      1.05s transform. */
   --ease:cubic-bezier(.22,.61,.36,1);
   --ease-out:cubic-bezier(.16,1,.3,1);
-  --ease-io:cubic-bezier(.65,0,.35,1);
 }
 *,*::before,*::after{box-sizing:border-box}
 html{ -webkit-text-size-adjust:100%; scroll-behavior:auto; background:var(--ink);
@@ -143,7 +142,7 @@ h1,h2,h3{ font-weight:400; margin:0; letter-spacing:-.008em; }
 .pre-mark{ margin:0 auto 22px; width:72px; height:auto; }
 .pre-word{ font-family:var(--font-display); font-weight:400; font-size:13px; letter-spacing:.26em;
   color:var(--bone); margin:0 0 22px .26em; }
-.pre-bar{ position:relative; height:1px; background:rgba(228,235,240,.14); overflow:hidden; }
+.pre-bar{ position:relative; height:1px; background:var(--line); overflow:hidden; }
 .pre-bar i{ position:absolute; inset:0 100% 0 0; background:var(--bone); transition:right .35s linear; }
 .pre-meta{ display:flex; justify-content:space-between; margin-top:12px; font-family:var(--font-mono);
   font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
@@ -294,7 +293,6 @@ html.nav-open .nav{ transform:none; transition:none; }
 .plate:hover .bar{ transform:scaleX(1); }
 
 .hero-cta{ margin-top:clamp(18px,2.6vh,32px); }
-.reel-cta{ position:relative; z-index:2; margin-top:0; }
 .cta{
   position:relative; display:inline-flex; align-items:center; gap:14px; margin-top:44px;
   padding:17px 30px; border:1px solid var(--line); border-radius:100px; overflow:hidden; isolation:isolate;
@@ -326,7 +324,7 @@ html.nav-open .nav{ transform:none; transition:none; }
 .foot-brand .foot-keys{ margin-top:12px; font-family:var(--font-mono); font-size:10px; letter-spacing:.2em;
   text-transform:uppercase; color:var(--muted); }
 .foot-grid > div:nth-child(n+3){ padding-left:clamp(18px,2.2vw,34px); border-left:1px solid var(--line-soft); }
-.foot h4{ margin:0 0 16px; font-family:var(--font-mono); font-size:11px; font-weight:400; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); }
+.foot h3{ margin:0 0 16px; font-family:var(--font-mono); font-size:11px; font-weight:400; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); }
 .foot ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; }
 .foot li{ overflow:hidden; font-size:13px; color:#909ca7; }
 .foot li a{ display:inline-block; color:inherit;
@@ -362,7 +360,7 @@ html.nav-open .nav{ transform:none; transition:none; }
   /* position comes in through `translate` (set per frame by JS); the grow is a
      `transform` scale, so neither ever touches layout */
   transition:transform .35s var(--ease-out), background-color .35s, border-color .35s, opacity .3s; opacity:0; }
-.cur-dot.act{ transform:scale(2); background:rgba(228,235,240,.07); border-color:rgba(228,235,240,.36); }
+.cur-dot.act{ transform:scale(2); background:var(--line-soft); border-color:rgba(228,235,240,.36); }
 @media (hover:hover) and (pointer:fine){ .cur-dot{ opacity:1 } }
 
 /* ============================================================= fallback

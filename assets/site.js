@@ -31,6 +31,28 @@ const qn     = (k, d) => { const v = Q.get(k); return v === null ? d : parseFloa
 const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COARSE = matchMedia('(hover: none)').matches;
 
+/* ------------------------------------------------------ WhatsApp routing
+   Every conversion on the site opens WhatsApp with its own pre-filled
+   message. The number lives here and nowhere else, so it changes once.
+
+   The rule for which controls these are: anything phrased as an action
+   opens WhatsApp; anything phrased as a place scrolls. So every .cta --
+   Start a Project, Choose Package, Discuss This Tier, Discuss Your
+   Project, Book a Shoot, Send on WhatsApp -- carries a data-wa message,
+   while the menu's Contact link, being a destination, still scrolls to the
+   section. A control labelled with a verb should never cost two clicks to
+   reach one outcome.
+
+   TODO: the client's WhatsApp number — digits only, country code first,
+   no '+', spaces or dashes, e.g. '919876543210'. While this is empty every
+   WhatsApp control stays disabled, exactly as the contact button does
+   today, rather than linking to a number that does not answer. */
+const WHATSAPP = '';
+
+/* wa.me carries the message as one encoded query parameter.
+   encodeURIComponent is what turns the line breaks into %0A. */
+const waURL = msg => WHATSAPP ? 'https://wa.me/' + WHATSAPP + '?text=' + encodeURIComponent(msg) : '';
+
 const clamp  = (v, a, b) => v < a ? a : (v > b ? b : v);
 /* How hard the scene plays. A page that is not the landing page sets
    data-scene on <body> to hold the pointer parallax and the idle drift back,
@@ -904,7 +926,6 @@ function wireHeroExit() {
      stays put, as it always has. */
   const seq = [
     { el: $('.hero-sub'), at: .05, span: .42, shift: true },
-    { el: $('.hero-keys'), at: .10, span: .40, shift: true },
     { el: $('.hero-cta'), at: .14, span: .40, shift: true },
     ...$$('.chip').map((el, i) => ({ el: el, at: .20 + i * .10, span: .38, shift: true }))
   ].filter(o => o.el);
@@ -1016,6 +1037,99 @@ function wireFocus() {
 /* One delegated press handler for every [data-press]: touch screens have no
    hover, so this is how a tap says it landed. Released on pointerup, on
    cancel, on leaving the element and on any scroll, so nothing can stick. */
+/* Each control carries its own message in data-wa. Until the number is
+   set they stay exactly as the markup leaves them: focusable buttons that
+   announce themselves disabled. Once it is set each becomes a real link,
+   so the browser's own new-tab, copy-link and middle-click all work. */
+function wireWhatsApp() {
+  $$('[data-wa]').forEach(el => {
+    const msg = el.getAttribute('data-wa');
+    if (!WHATSAPP || !msg) return;
+    if (el.tagName === 'LI') {                 /* the footer entry: text until wired */
+      const a = document.createElement('a');
+      a.href = waURL(msg); a.target = '_blank'; a.rel = 'noopener';
+      a.setAttribute('data-cursor', '');
+      a.textContent = el.textContent.trim();
+      el.textContent = ''; el.appendChild(a);
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = waURL(msg); a.target = '_blank'; a.rel = 'noopener';
+    a.innerHTML = el.innerHTML;
+    [].slice.call(el.attributes).forEach(at => {
+      if (at.name === 'type' || at.name === 'aria-disabled') return;
+      a.setAttribute(at.name, at.value);
+    });
+    el.replaceWith(a);
+  });
+}
+
+/* The Customize group. One service at a time, so this is a radio group, not
+   four toggles: role="radio" with aria-checked, arrow keys that move and
+   select together, and a roving tabindex so Tab enters and leaves the group
+   once instead of stopping at all four.
+
+   A choice cannot be taken back. That is the radio convention — once
+   something is chosen, something is always chosen — and it is right here,
+   because the action has nothing to send without a service. So clicking the
+   chosen tile again leaves it chosen, and the action is disabled only up to
+   the first choice.
+
+   The count line and the message are both rebuilt from the selection every
+   time it changes, so neither can disagree with what is on screen.
+
+   The action stays a button rather than becoming a link, because its target
+   changes with the selection and because it has to be genuinely inactive
+   before anything is chosen — which an anchor cannot be. */
+function wireCustomize() {
+  const tiles = $$('.svc');
+  if (!tiles.length) return;
+  const count = $('#svc-count'), go = $('#svc-go');
+  const chosen = () => tiles.find(t => t.getAttribute('aria-checked') === 'true') || null;
+  const sync = () => {
+    const t = chosen(), name = t ? t.dataset.svc : '';
+    count.textContent = name ? name + ' selected' : 'No service selected';
+    /* Only the chosen tile is tabbable. With nothing chosen yet the first
+       one holds the stop, so the group is always reachable by Tab. */
+    tiles.forEach(el => el.tabIndex = (t ? el === t : el === tiles[0]) ? 0 : -1);
+    /* Before the first choice there is no message to build: the action is
+       inactive, so an empty service must never reach the attribute either.
+       TODO: client to approve copy */
+    if (!go) return;
+    go.dataset.wa = name
+      ? 'Hi Vajradhan — I’d like a custom package. I’m interested in '
+        + name + '. Could we scope it?'
+      : '';
+    go.setAttribute('aria-disabled', String(!(name && WHATSAPP)));
+  };
+  /* Selecting is always "this one and no other", so clicking what is already
+     chosen is a no-op rather than a way back to nothing. */
+  const pick = (t, focus) => {
+    tiles.forEach(el => el.setAttribute('aria-checked', String(el === t)));
+    sync();
+    if (focus) t.focus();
+  };
+  tiles.forEach(t => t.addEventListener('click', () => pick(t, false)));
+  /* Arrow keys move and select in one step, which is what a radio group
+     does; the ends wrap. Space is the button's own activation and needs
+     nothing here. */
+  const STEP = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+  tiles.forEach((t, i) => t.addEventListener('keydown', e => {
+    let next = null;
+    if (e.key in STEP) next = tiles[(i + STEP[e.key] + tiles.length) % tiles.length];
+    else if (e.key === 'Home') next = tiles[0];
+    else if (e.key === 'End') next = tiles[tiles.length - 1];
+    if (!next) return;
+    e.preventDefault();
+    pick(next, true);
+  }));
+  if (go) go.addEventListener('click', () => {
+    if (go.getAttribute('aria-disabled') === 'true') return;
+    open(waURL(go.dataset.wa), '_blank', 'noopener');
+  });
+  sync();
+}
+
 function wirePress() {
   let held = null;
   const off = () => { if (held) { held.classList.remove('is-press'); held = null; } };
@@ -1205,6 +1319,11 @@ const JOBS = [
 ];
 
 function boot() {
+  /* wireWhatsApp swaps each control for a fresh <a>, so it has to run before
+     wireReveals: the reveal observer holds element references, and a node
+     replaced after it was observed would never receive .rv-in -- it would sit
+     at opacity 0 for good. The DOM must be final before the reveals are wired. */
+  wireCustomize(); wireWhatsApp();
   wireReveals(); wireNav(); wireHeroExit(); wireFocus(); wireCursor(); wirePress();
   document.body.classList.add('is-locked');
   let i = 0;
@@ -1287,6 +1406,22 @@ function start() {
   window.__vajradhan = {
     RIG: RIG, WORLD: WORLD, WORD: WORD, CAM: CAM, POST: POST, PERF: PERF, renderer: renderer, scene: scene, camera: camera,
     anchors: () => anchors,
+    /* hand-testing: every WhatsApp control, its message and the URL it
+       builds. Pass a sample number to preview the URLs before the real one
+       is set, e.g. __vajradhan.whatsapp('910000000000'). */
+    whatsapp(sample) {
+      const num = sample || WHATSAPP;
+      return $$('[data-wa]').map(el => ({
+        page: location.pathname,
+        where: (el.closest('section') || el.closest('footer') || {}).id || el.closest('footer') ? 'footer' : '?',
+        control: ((el.querySelector('span') || el).textContent || '').replace(/\s+/g, ' ').trim().slice(0, 30),
+        disabled: el.tagName === 'LI' ? !el.querySelector('a')
+                                      : el.getAttribute('aria-disabled') === 'true',
+        message: el.getAttribute('data-wa') || '',
+        url: num ? 'https://wa.me/' + num + '?text=' + encodeURIComponent(el.getAttribute('data-wa') || '')
+                 : '(no number set \u2014 control stays disabled)'
+      }));
+    },
     /* hand-testing: drop the context, and give it back after `ms` (omit ms to never restore) */
     loseContext(ms) {
       const ext = renderer.getContext().getExtension('WEBGL_lose_context');
