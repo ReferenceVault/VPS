@@ -33,8 +33,9 @@ Then open <http://localhost:8000> (or the port `npx serve` prints).
 | `?dpr=1` | Override the device-pixel-ratio cap |
 | `?adapt=0` | Freeze the adaptive quality governor |
 | `?shot=3` | Jump straight to section *n* with every reveal shown (for screenshots) |
+| `?driver=timer` | Drive the frame loop from `setTimeout` instead of `requestAnimationFrame` |
 
-In the console, `__vajradhan.loseContext(1500)` drops the WebGL context and restores it after 1.5 s. `__vajradhan.loseContext()` drops it for good, and the page falls back after 4 s.
+In the console, `__vajradhan.loseContext(1500)` drops the WebGL context and restores it after 1.5 s. `__vajradhan.loseContext()` drops it for good, and the page falls back after 4 s. `__vajradhan.whatsapp('910000000000')` lists every WhatsApp control with its message and the URL it builds, so the messages can be read before the real number is set.
 
 ## Deploy to GitHub Pages
 
@@ -99,6 +100,51 @@ python tools/build_hero_layers.py   # -> assets/img/hero-*-{1920,960}.webp
 
 Generated images follow the project naming: `hero-*` (the hero's layers), `vajradhan-logo`.
 
-## Placeholder content
+## What the site still needs before launch
 
-The copy is the client's own (see their handoff sheet). What is still outstanding is marked `<!-- TODO -->` in `index.html`: the business email (the contact button is inert until it exists), the Instagram and LinkedIn URLs, the WhatsApp number, the showreel and its poster, approved stills for the four projects, the About stats figures, and the absolute `og:` URLs. Search for `TODO` before launch.
+Everything below is marked `TODO` in the files, so a developer can find each one by searching for that word. Nothing here is broken — each item is a place where the site is deliberately waiting for something rather than guessing at it. Where a detail is missing, the control is switched off rather than pointing somewhere that does not work, and the space it will occupy is already held open, so nothing on the page will move when the real thing arrives.
+
+There are 25 of them. They fall into four groups.
+
+### 1 · Things only you can give us
+
+**The WhatsApp number.** Every button on the site that invites someone to get in touch opens WhatsApp with a message already written for them — the package name and price if they are on a package, the services they picked if they built their own, or a general opener everywhere else. There are thirteen of these buttons across the two pages, plus the Custom Work button, which writes its message from whatever the visitor has selected.
+
+**A stand-in number is in place so the flow can be tested end to end.** It is a developer's own line, not the studio's, and it must be swapped before launch. It is a single value in one file, so changing it switches all fourteen controls over at once. Until it is changed, every enquiry made through the site reaches the developer rather than you.
+
+**A business email address.** The contact list on the home page is waiting for this.
+
+**Your Instagram and LinkedIn addresses.** The footer lists both by name on each page, as plain text. Once the addresses exist they become links.
+
+**The About figures.** A row of statistics was drafted and has been taken out until you can confirm real numbers. It needs four, not two. The design for it is saved and can be put straight back.
+
+**The web address.** Two tags on each page that control how the site looks when someone shares a link need the final address before they can be filled in.
+
+### 2 · Two questions on the Packages page
+
+**What does "Post" mean?** It appears as a line item on both Vajra Frame and Vajra Edit — "Post: 10" — and we do not know what is being counted. It is shown exactly as supplied rather than guessed at.
+
+**What makes Vajra Signature different?** It is priced at ₹13,999, above Vajra Edit Pro at ₹9,999, but nothing was supplied that says what the buyer gets for the difference. Its card is drawn with a dashed edge and carries a short note asking for this, so the gap cannot be published by accident. It needs at least one benefit that belongs to Signature alone — a higher level of editing, faster turnaround, or an extra revision.
+
+### 3 · Wording for you to approve
+
+All of this was written as a placeholder so the page could be built and seen. None of it came from you, and all of it should be read before launch.
+
+**The four project write-ups.** Selected Work lists Kairoxx, Zyrov, Real Estate and Vajradhan Originals as written panels — a sentence and a pair of discipline tags each. No imagery was supplied and none is expected, so the section was built to stand on its words alone; those words need your eye. No claims about clients, results or numbers appear anywhere on the site, and none should be added without your say-so.
+
+**The four Custom Work descriptions.** You supplied the four service names — Pre-wedding Shoot, Wedding Shoot, Personal Content, Car Delivery Video. The one-line description under each is ours.
+
+**The line "Custom work is quoted after a short conversation"** under the service chooser.
+
+**The WhatsApp messages.** Each button writes a different opening message on the customer's behalf. Worth reading all of them, since they go out in your name:
+
+- A package button — *Hi Vajradhan — I'd like to book the Vajra Frame package (₹14,999). Could you tell me the next steps?*
+- Vajra Signature — *Hi Vajradhan — I'm interested in Vajra Signature (₹13,999). Could you share what's included?*
+- Custom work — *Hi Vajradhan — I'd like a custom package. I'm interested in: Wedding Shoot, Personal Content. Could we scope it?* — the list changes to match whatever the visitor selected.
+- Everywhere else — *Hi Vajradhan — I'd like to talk about a project. Could we start a conversation?*
+
+**A closing line** above the two buttons at the foot of the Packages page, if you want one. There is none at the moment because none was supplied, and we would rather leave a gap than invent a sentence.
+
+### 4 · One for the developer
+
+A technical note is recorded against the home page's footer about how one of its background layers is stacked. It has no visible effect today and needs no decision from you.

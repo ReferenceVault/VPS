@@ -106,6 +106,32 @@
   font-family:var(--font-mono); font-size:11px; line-height:1.7; letter-spacing:0;
   color:var(--bone-dim); }
 
+/* ------------------------------------------------------------ custom work
+   Four toggles built on .plate: same box, same hover lean, same foot bar.
+   Selected is the component's own wash recipe in ember, the outline the work
+   cards use, and a filled dot. Every value is one already on the site. */
+@media (min-width:821px){ .plates--four{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
+.svc{ min-height:0; text-align:left; gap:12px; }
+.svc h3{ margin:0; font-family:var(--font-display); font-size:clamp(13px,1.15vw,17px);
+  font-weight:400; letter-spacing:.1em; text-transform:uppercase; line-height:1.4; }
+.svc p{ margin:0; max-width:42ch; font-size:14px; line-height:1.7; color:#9ba7b2; }
+.svc .dot{ width:12px; height:12px; border:1px solid var(--line); border-radius:50%;
+  transition:background-color .35s var(--ease), border-color .35s var(--ease); }
+.svc[aria-pressed="true"]{ outline:1px solid var(--ember); outline-offset:-1px;
+  background:linear-gradient(145deg, rgba(255,138,61,.14), transparent 58%), rgba(10,14,21,.84); }
+.svc[aria-pressed="true"] .dot{ background:var(--ember); border-color:var(--ember); }
+/* The selected outline is (0,2,0) and would otherwise outrank the global
+   :focus-visible at (0,1,0), leaving a chosen tile with no visible ring.
+   This matches its specificity and follows it, so focus always shows. */
+.svc:focus-visible{ outline:1px solid var(--accent); outline-offset:4px; }
+.svc-foot{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between;
+  gap:18px; margin-top:clamp(22px,2.4vw,36px); }
+.svc-foot .cta{ margin-top:0; }
+.svc-count{ margin:0; font-family:var(--font-mono); font-size:11px; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--bone-dim); }
+.svc-note{ margin:10px 0 0; font-family:var(--font-mono); font-size:10px; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--muted); }
+
 /* ----------------------------------------------------------- the closing band
    Two buttons and nothing else, centred in the section's own air. */
 .pk-actions{ display:flex; flex-wrap:wrap; justify-content:center;
@@ -131,8 +157,8 @@
 /* These section labels run longer than any on the home page, so upright they
    collide across the rule. Each takes a line instead. */
 @media (max-width:560px){
-  #offline .sec-head, #online .sec-head{ display:grid; gap:6px; }
-  #offline .sec-head .rule, #online .sec-head .rule{ display:none; }
+  #offline .sec-head, #online .sec-head, #customize .sec-head{ display:grid; gap:6px; }
+  #offline .sec-head .rule, #online .sec-head .rule, #customize .sec-head .rule{ display:none; }
 }
 </style>
 </head>
@@ -198,10 +224,11 @@
   <a class="mlink" href="../#contact" data-cursor><span>05</span><b>Contact</b></a>
   <a class="mlink" href="./" aria-current="page" data-cursor><span>06</span><b>Packages</b></a>
   <p class="menu-foot">
-    <a class="cta" href="../#contact" data-cursor data-press>
+    <button class="cta" type="button" aria-disabled="true"
+              data-wa="Hi Vajradhan — I’d like to talk about a project. Could we start a conversation?" data-cursor data-press>
       <i aria-hidden="true"></i><span>Start a Project</span>
       <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
-    </a>
+    </button>
   </p>
 </nav>
 <div class="scrim" id="scrim" aria-hidden="true"></div>
@@ -222,9 +249,9 @@
 <!-- ============================================================ offline
      Vajra Frame and Vajra Cinema. The cards are .plate, the capabilities
      component, with a price block and label-and-value rows added.
-     TODO: "Choose Package" goes to the contact section, which is itself
-     inert until the client supplies a business email. Once there is a real
-     address or form, each button should carry its package name with it. -->
+     Every button here opens WhatsApp with its own pre-filled message, and
+     stays disabled until the number is set in site.js.
+     TODO: client to approve the message copy. -->
 <section class="sec" id="offline" data-cam="1" data-rail="On-location" aria-labelledby="offline-title">
   <div class="sec-head" data-rv="fade">
     <span class="k"><b>01</b> — On-location Production</span><span class="rule"></span><span class="k">Offline Packages</span>
@@ -249,10 +276,11 @@
         <li><span class="l">Stories</span><span class="v">3 complimentary</span></li>
         <li><span class="l">Revisions</span><span class="v">1</span></li>
       </ul>
-      <a class="cta" href="../#contact" data-cursor data-press>
+      <button class="cta" type="button" aria-disabled="true"
+                data-wa="Hi Vajradhan — I’d like to book the Vajra Frame package (₹14,999). Could you tell me the next steps?" data-cursor data-press>
         <i aria-hidden="true"></i><span>Choose Package</span>
         <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
-      </a>
+      </button>
       <i class="bar" aria-hidden="true"></i>
     </article>
 
@@ -269,10 +297,11 @@
         <li><span class="l">Editing Treatment</span><span class="v">Colour grading, SFX, quality
           enhancement and text captions</span></li>
       </ul>
-      <a class="cta" href="../#contact" data-cursor data-press>
+      <button class="cta" type="button" aria-disabled="true"
+                data-wa="Hi Vajradhan — I’d like to book the Vajra Cinema package (₹21,699). Could you tell me the next steps?" data-cursor data-press>
         <i aria-hidden="true"></i><span>Choose Package</span>
         <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
-      </a>
+      </button>
       <i class="bar" aria-hidden="true"></i>
     </article>
   </div>
@@ -303,10 +332,11 @@
         <li><span class="l">Stories</span><span class="v">3 complimentary</span></li>
         <li><span class="l">Revisions</span><span class="v">1</span></li>
       </ul>
-      <a class="cta" href="../#contact" data-cursor data-press>
+      <button class="cta" type="button" aria-disabled="true"
+                data-wa="Hi Vajradhan — I’d like to book the Vajra Edit package (₹7,299). Could you tell me the next steps?" data-cursor data-press>
         <i aria-hidden="true"></i><span>Choose Package</span>
         <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
-      </a>
+      </button>
       <i class="bar" aria-hidden="true"></i>
     </article>
 
@@ -322,10 +352,11 @@
         <li><span class="l">Editing Treatment</span><span class="v">Colour grading, SFX, quality
           enhancement and text captions</span></li>
       </ul>
-      <a class="cta" href="../#contact" data-cursor data-press>
+      <button class="cta" type="button" aria-disabled="true"
+                data-wa="Hi Vajradhan — I’d like to book the Vajra Edit Pro package (₹9,999). Could you tell me the next steps?" data-cursor data-press>
         <i aria-hidden="true"></i><span>Choose Package</span>
         <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
-      </a>
+      </button>
       <i class="bar" aria-hidden="true"></i>
     </article>
 
@@ -340,12 +371,72 @@
       <!-- TODO -->
       <p class="pk-confirm">[VAJRADHAN TO CONFIRM: at least one Signature-only benefit — higher edit
         complexity, priority turnaround, or an additional revision.]</p>
-      <a class="cta" href="../#contact" data-cursor data-press>
+      <button class="cta" type="button" aria-disabled="true"
+                data-wa="Hi Vajradhan — I’m interested in Vajra Signature (₹13,999). Could you share what’s included?" data-cursor data-press>
         <i aria-hidden="true"></i><span>Discuss This Tier</span>
         <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
-      </a>
+      </button>
       <i class="bar" aria-hidden="true"></i>
     </article>
+  </div>
+</section>
+
+<!-- ============================================================ customize
+     Four services the visitor can combine. No prices: custom work is
+     quote-only. The action is disabled until at least one tile is on, so a
+     message can never go out with an empty list.
+     TODO: client to approve copy — only the four names were supplied. -->
+<section class="sec" id="customize" aria-labelledby="custom-title">
+  <div class="sec-head" data-rv="fade">
+    <span class="k"><b>03</b> — Custom Work</span><span class="rule"></span><span class="k">Build Your Own</span>
+  </div>
+  <div class="split-head">
+    <h2 class="display h-sec" id="custom-title" data-rv="up">Build your own.</h2>
+    <p class="body-lg" data-rv="up">Not every project fits a package. Choose what you need and we will
+      scope it with you — pick one, or combine several.</p>
+  </div>
+
+  <div class="plates plates--four">
+    <button class="plate svc" type="button" aria-pressed="false" data-svc="Pre-wedding Shoot" data-rv="up" data-cursor>
+      <i class="dot" aria-hidden="true"></i>
+      <h3>Pre-wedding Shoot</h3>
+      <!-- TODO: client to approve copy -->
+      <p>Cinematic films and stills ahead of the day.</p>
+      <i class="bar" aria-hidden="true"></i>
+    </button>
+    <button class="plate svc" type="button" aria-pressed="false" data-svc="Wedding Shoot" data-rv="up" data-cursor>
+      <i class="dot" aria-hidden="true"></i>
+      <h3>Wedding Shoot</h3>
+      <!-- TODO: client to approve copy -->
+      <p>Full-day coverage, directed and finished.</p>
+      <i class="bar" aria-hidden="true"></i>
+    </button>
+    <button class="plate svc" type="button" aria-pressed="false" data-svc="Personal Content" data-rv="up" data-cursor>
+      <i class="dot" aria-hidden="true"></i>
+      <h3>Personal Content</h3>
+      <!-- TODO: client to approve copy -->
+      <p>Ongoing shoots for creators and founders.</p>
+      <i class="bar" aria-hidden="true"></i>
+    </button>
+    <button class="plate svc" type="button" aria-pressed="false" data-svc="Car Delivery Video" data-rv="up" data-cursor>
+      <i class="dot" aria-hidden="true"></i>
+      <h3>Car Delivery Video</h3>
+      <!-- TODO: client to approve copy -->
+      <p>The handover moment, shot like a film.</p>
+      <i class="bar" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <div class="svc-foot" data-rv="fade">
+    <div>
+      <p class="svc-count" id="svc-count" aria-live="polite">No services selected</p>
+      <!-- TODO: client to approve copy -->
+      <p class="svc-note">Custom work is quoted after a short conversation</p>
+    </div>
+    <button class="cta" id="svc-go" type="button" aria-disabled="true" data-cursor data-press>
+      <i aria-hidden="true"></i><span>Send on WhatsApp</span>
+      <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
+    </button>
   </div>
 </section>
 
@@ -356,14 +447,16 @@
      TODO: a closing line above these two buttons, if the client wants one. -->
 <section class="sec pk-close" id="talk" data-cam="3" data-rail="Discuss">
   <div class="pk-actions" data-rv="up">
-    <a class="cta" href="../#contact" data-cursor data-press>
+    <button class="cta" type="button" aria-disabled="true"
+              data-wa="Hi Vajradhan — I’d like to talk about a project. Could we start a conversation?" data-cursor data-press>
       <i aria-hidden="true"></i><span>Discuss Your Project</span>
       <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
-    </a>
-    <a class="cta" href="../#contact" data-cursor data-press>
+    </button>
+    <button class="cta" type="button" aria-disabled="true"
+              data-wa="Hi Vajradhan — I’d like to talk about a project. Could we start a conversation?" data-cursor data-press>
       <i aria-hidden="true"></i><span>Book a Shoot</span>
       <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
-    </a>
+    </button>
   </div>
 </section>
 
@@ -379,7 +472,7 @@
         <p class="foot-keys">Stories &bull; Visuals &bull; Impact</p>
       </div>
     </div>
-    <div data-rv="up"><h4>Studio</h4><ul>
+    <div data-rv="up"><h3>Studio</h3><ul>
       <li><a href="../#about" data-cursor>About</a></li>
       <li><a href="../#capabilities" data-cursor>Capabilities</a></li>
       <li><a href="../#work" data-cursor>Work</a></li>
@@ -389,10 +482,12 @@
     <!-- TODO: the three below stay as text until the client supplies the
          Instagram and LinkedIn URLs and the business email; each then becomes a
          link, like the Studio column above it. -->
-    <div data-rv="up"><h4>Connect</h4><ul>
+    <div data-rv="up"><h3>Connect</h3><ul>
       <li>Instagram</li>
       <li>LinkedIn</li>
       <li>Email</li>
+      <!-- TODO: client to approve copy -->
+      <li data-wa="Hi Vajradhan — I’d like to talk about a project. Could we start a conversation?">WhatsApp</li>
     </ul></div>
   </div>
   <div class="foot-base" data-rv="fade">
