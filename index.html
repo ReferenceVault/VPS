@@ -120,11 +120,6 @@
 .fin h2{ font-size:clamp(24px,3.2vw,44px); line-height:1.26; letter-spacing:.02em; text-transform:uppercase; max-width:18ch; }
 .fin p{ max-width:46ch; margin:26px auto 0; }
 .fin-claim{ margin-top:18px; color:var(--bone); }
-.fin-links{ list-style:none; margin:26px 0 0; padding:0; display:flex; flex-wrap:wrap;
-  justify-content:center; gap:10px 26px; font-family:var(--font-mono);
-  font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
-.fin-links a{ color:var(--bone-dim); transition:color .35s var(--ease); }
-.fin-links a:hover, .fin-links a:focus-visible{ color:var(--bone); }
 
 /* ============================================================= responsive */
 @media (max-width:1080px){
@@ -414,10 +409,6 @@
     <i aria-hidden="true"></i><span>Start a Project</span>
     <svg viewBox="0 0 14 14" fill="none" width="13" height="13" aria-hidden="true"><path d="M3 11 11 3M5 3h6v6" stroke="#e4ebf0" stroke-width="1.3"/></svg>
   </button>
-  <ul class="fin-links" data-rv="fade">
-    <!-- TODO: real business email, as <li><a href="mailto:...">hello@vajradhan...</a></li> -->
-    <!-- TODO: the Instagram profile URL, so the handle below can become a link -->
-  </ul>
 </section>
 
 <!-- ============================================================ footer -->
@@ -430,23 +421,21 @@
         <p class="foot-keys">Stories &bull; Visuals &bull; Impact</p>
       </div>
     </div>
-    <div data-rv="up"><h3>Studio</h3><ul>
-      <li><a href="#about" data-cursor>About</a></li>
-      <li><a href="#capabilities" data-cursor>Capabilities</a></li>
-      <li><a href="#work" data-cursor>Work</a></li>
-      <li><a href="#process" data-cursor>Process</a></li>
-      <li><a href="#contact" data-cursor>Contact</a></li>
-    </ul></div>
-    <!-- TODO: the three below stay as text until the client supplies the
-         Instagram and LinkedIn URLs and the business email; each then becomes a
-         link, like the Studio column above it. -->
-    <div data-rv="up"><h3>Connect</h3><ul>
-      <li>Instagram</li>
-      <li>LinkedIn</li>
-      <li>Email</li>
-      <!-- TODO: client to approve copy -->
-      <li data-wa="Hi Vajradhan — I’d like to talk about a project. Could we start a conversation?">WhatsApp</li>
-    </ul></div>
+    <nav class="foot-nav" aria-label="Footer" data-rv="up">
+      <ul>
+        <li><a href="#about" data-cursor>About</a></li>
+        <li><a href="#work" data-cursor>Work</a></li>
+      </ul>
+      <ul>
+        <li><a href="#capabilities" data-cursor>Capabilities</a></li>
+        <li><a href="#process" data-cursor>Process</a></li>
+      </ul>
+      <ul class="foot-reach">
+        <li><a href="https://www.instagram.com/vajradhan" target="_blank" rel="noopener" data-cursor>Instagram</a></li>
+        <!-- TODO: client to approve copy -->
+        <li data-wa="Hi Vajradhan — I’d like to talk about a project. Could we start a conversation?">WhatsApp</li>
+      </ul>
+    </nav>
   </div>
   <div class="foot-base" data-rv="fade">
     <span>© 2026 Vajradhan Production. All rights reserved.</span>

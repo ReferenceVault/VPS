@@ -43,11 +43,10 @@ const COARSE = matchMedia('(hover: none)').matches;
    section. A control labelled with a verb should never cost two clicks to
    reach one outcome.
 
-   TODO: the client's WhatsApp number — digits only, country code first,
-   no '+', spaces or dashes, e.g. '919876543210'. While this is empty every
-   WhatsApp control stays disabled, exactly as the contact button does
-   today, rather than linking to a number that does not answer. */
-const WHATSAPP = '';
+   The studio's number: digits only, country code first, no '+', spaces or
+   dashes. If it is ever emptied, every WhatsApp control goes back to being
+   disabled rather than linking to a number that does not answer. */
+const WHATSAPP = '917976782681';
 
 /* wa.me carries the message as one encoded query parameter.
    encodeURIComponent is what turns the line breaks into %0A. */
