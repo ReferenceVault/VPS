@@ -313,8 +313,8 @@ html.nav-open .nav{ transform:none; transition:none; }
 
 /* — footer · manifesto */
 .foot{ position:relative; padding:clamp(56px,9vh,110px) var(--pad) clamp(26px,4vh,40px); }
-.foot-grid{ position:relative; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:clamp(22px,4vw,60px); }
-.foot-brand{ grid-column:1 / -1; display:grid; grid-template-columns:84px minmax(0,1fr); gap:24px; align-items:center;
+.foot-grid{ position:relative; display:grid; gap:clamp(22px,4vw,60px); }
+.foot-brand{ display:grid; grid-template-columns:84px minmax(0,1fr); gap:24px; align-items:center;
   padding-bottom:34px; margin-bottom:8px; border-bottom:1px solid var(--line-soft); }
 .foot-brand img{ width:72px; height:auto; transition:transform .7s var(--ease-out); }
 .foot-brand:hover img{ transform:scale(1.04); }
@@ -323,15 +323,20 @@ html.nav-open .nav{ transform:none; transition:none; }
 /* specific enough to beat .foot-brand p, which sets the big line's size */
 .foot-brand .foot-keys{ margin-top:12px; font-family:var(--font-mono); font-size:10px; letter-spacing:.2em;
   text-transform:uppercase; color:var(--muted); }
-.foot-grid > div:nth-child(n+3){ padding-left:clamp(18px,2.2vw,34px); border-left:1px solid var(--line-soft); }
-.foot h3{ margin:0 0 16px; font-family:var(--font-mono); font-size:11px; font-weight:400; letter-spacing:.22em; text-transform:uppercase; color:var(--muted); }
+/* The link group: two short columns of section links, a hairline, then the
+   two ways to reach the studio. Centred in the footer rather than pushed to
+   the left edge, and unlabelled — six words in three groups need no headings.
+   The rule is the one the brand block above it already uses. */
 .foot ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; }
+.foot-nav{ display:flex; justify-content:center; gap:clamp(26px,4vw,64px); }
+.foot .foot-reach{ padding-left:clamp(18px,2.2vw,34px); border-left:1px solid var(--line-soft); }
 .foot li{ overflow:hidden; font-size:13px; color:#909ca7; }
 .foot li a{ display:inline-block; color:inherit;
   transition:color .35s var(--ease), transform .5s var(--ease-out); }
 .foot li a:hover, .foot li a:focus-visible{ transform:translate3d(6px,0,0); }
 .foot li a:hover{ color:var(--bone); }
 .foot-base{ position:relative; display:flex; flex-wrap:wrap; gap:8px 20px; align-items:center;
+  justify-content:center; text-align:center;
   margin-top:clamp(38px,6vh,74px); padding-top:20px; border-top:1px solid var(--line-soft);
   font-family:var(--font-mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); }
 
@@ -415,10 +420,14 @@ html.nav-open .nav{ transform:none; transition:none; }
   .rail{ display:none; }
   .plates{ grid-template-columns:1fr; }
   .plate{ min-height:0; }
-  .foot-grid{ grid-template-columns:1fr; }
-  .foot-brand{ grid-column:auto; grid-template-columns:minmax(0,1fr); row-gap:16px; }
-  .foot-grid > div:nth-child(n+3){ padding-left:0; border-left:0; }
-  .foot-base{ flex-direction:column; align-items:flex-start; gap:8px; }
+  .foot-brand{ grid-template-columns:minmax(0,1fr); row-gap:16px; }
+  /* A vertical hairline cannot survive the width, so the reach group drops
+     below the two link columns and the rule turns with it: the same line,
+     laid horizontally. The columns stay side by side — four short words. */
+  .foot-nav{ flex-wrap:wrap; gap:18px clamp(26px,8vw,64px); }
+  .foot .foot-reach{ flex-basis:100%; justify-content:center; align-items:center;
+    padding-left:0; padding-top:20px; border-left:0; border-top:1px solid var(--line-soft); }
+  .foot-base{ gap:8px; }
 }
 
 @media (prefers-reduced-motion:reduce){

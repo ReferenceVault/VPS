@@ -104,15 +104,11 @@ Generated images follow the project naming: `hero-*` (the hero's layers), `vajra
 
 Everything below is marked `TODO` in the files, so a developer can find each one by searching for that word. Nothing here is broken — each item is a place where the site is deliberately waiting for something rather than guessing at it. Where a detail is missing, the control is switched off rather than pointing somewhere that does not work, and the space it will occupy is already held open, so nothing on the page will move when the real thing arrives.
 
-There are 25 of them. They fall into four groups.
+There are 21 of them. They fall into four groups.
+
+Your WhatsApp number and Instagram are now in place, so every way of reaching you works. LinkedIn and email have been taken out at your request: the studio is reachable by Instagram and WhatsApp only.
 
 ### 1 · Things only you can give us
-
-**The WhatsApp number.** Every button on the site that invites someone to get in touch opens WhatsApp with a message already written for them — the package name and price if they are on a package, the services they picked if they built their own, or a general opener everywhere else. There are thirteen of these buttons across the two pages, plus the Custom Work button, which writes its message from whatever the visitor has selected. **All fourteen are switched off until the number is supplied.** They are still visible and still reachable by keyboard, and they announce themselves as unavailable, but they do nothing. One number, entered once, turns all fourteen on.
-
-**A business email address.** The contact list on the home page is waiting for this.
-
-**Your Instagram and LinkedIn addresses.** The footer lists both by name on each page, as plain text. Once the addresses exist they become links.
 
 **The About figures.** A row of statistics was drafted and has been taken out until you can confirm real numbers. It needs four, not two. The design for it is saved and can be put straight back.
 
